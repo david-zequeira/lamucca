@@ -1,0 +1,348 @@
+---
+/* The doors (information-architecture.md §1). While the experience lives on one
+   page these resolve to chapters; they become routes as those pages ship. */
+const base = import.meta.env.BASE_URL;
+const links = [
+  { href: `${base}#descubre`, label: 'Restaurantes' },
+  { href: `${base}#madrid`, label: 'Historia' },
+  { href: `${base}#comida`, label: 'La comida' },
+  { href: `${base}#muckeros`, label: 'Muckeros' },
+];
+---
+
+<header class="nav" data-nav data-vt="nav">
+  <div class="nav__inner container">
+    <a href={base} class="nav__brand" aria-label="Lamucca — inicio">
+      <span class="nav__brand-mucca">Lamucca</span>
+      <svg class="nav__heart" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+        <path
+          d="M12 21s-7.5-4.9-10-9.3C.4 8.9 2 5 5.6 5c2 0 3.4 1.1 4.4 2.6h4C15 6.1 16.4 5 18.4 5 22 5 23.6 8.9 22 11.7 19.5 16.1 12 21 12 21Z"
+          fill="currentColor"
+        />
+      </svg>
+    </a>
+
+    <nav class="nav__links" aria-label="Principal">
+      {links.map((l) => (
+        <a href={l.href} class="nav__link label">{l.label}</a>
+      ))}
+    </nav>
+
+    <div class="nav__actions">
+      <a href={`${base}#reserva`} class="btn btn--stamp nav__cta desktop-only">Reservar</a>
+      <button
+        class="nav__burger"
+        type="button"
+        aria-expanded="false"
+        aria-controls="menu-overlay"
+        data-burger
+      >
+        <span class="nav__burger-line"></span>
+        <span class="nav__burger-line"></span>
+        <span class="sr-only">Menú</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Mobile Bottom Bar for reachable CTA -->
+<div class="mobile-bottom-bar" data-mobile-bar>
+  <a href={`${base}#reserva`} class="btn btn--stamp mobile-bottom-bar__cta">Reservar mesa</a>
+</div>
+
+<div class="overlay" id="menu-overlay" data-overlay hidden>
+  <nav class="overlay__nav container" aria-label="Menú móvil">
+    {links.map((l, i) => (
+      <a href={l.href} class="overlay__link" style={`--i:${i}`} data-overlay-link>
+        <span class="overlay__num label">0{i + 1}</span>
+        {l.label}
+      </a>
+    ))}
+    <a href={`${base}#reserva`} class="btn btn--stamp overlay__cta" data-overlay-link>Reservar mesa</a>
+  </nav>
+</div>
+
+<style>
+  .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--z-nav);
+    background: transparent;
+    border-bottom: var(--rule-width) solid transparent;
+    transition: background var(--t-normal) var(--ease-out), border-color var(--t-normal) var(--ease-out), color var(--t-normal) var(--ease-out);
+    /* At the top, over the cinematic hero, text must be light */
+    color: var(--paper);
+    --ink: var(--paper); /* Forces burger and other elements to be light */
+  }
+
+  .nav.is-scrolled {
+    background: color-mix(in srgb, var(--paper) 95%, transparent); /* Increased opacity slightly */
+    backdrop-filter: blur(12px); /* Increased blur */
+    border-bottom-color: var(--line);
+    /* Revert to dark text when scrolled */
+    color: var(--text-primary);
+    --ink: #201b16; /* Revert to actual ink color */
+  }
+
+  .nav__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-m);
+    height: var(--nav-height);
+  }
+
+  .nav__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45ch;
+    text-decoration: none;
+    font-size: var(--step-1);
+    line-height: 1;
+  }
+
+  .nav__brand-mucca {
+    font-family: var(--font-display);
+    font-weight: 640;
+    letter-spacing: -0.01em;
+  }
+
+  .nav__heart {
+    color: var(--coral);
+    transition: transform var(--t-micro) var(--ease-snap);
+  }
+
+  .nav__brand:hover .nav__heart {
+    transform: scale(1.25);
+  }
+
+  .nav__links {
+    display: none;
+    gap: var(--space-l);
+  }
+
+  .nav__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px; /* tap target — WCAG 2.5.8 */
+    text-decoration: none;
+    position: relative;
+  }
+
+  .nav__link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 100%;
+    bottom: -6px;
+    height: var(--rule-width);
+    background: var(--tomato);
+    transition: right var(--t-micro) var(--ease-out);
+  }
+
+  .nav__link:hover::after {
+    right: 0;
+  }
+
+  .nav__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-s);
+  }
+
+  .nav__cta {
+    min-height: 44px;
+    padding: 0.55em 1.35em;
+    font-size: var(--step--1);
+    /* En la barra, el sello se mantiene recto para no romper el eje */
+    rotate: 0deg;
+  }
+
+  .nav__burger {
+    display: grid;
+    place-content: center;
+    gap: 6px;
+    width: 48px;
+    height: 48px;
+    border: 0;
+    background: none;
+  }
+
+  .nav__burger-line {
+    width: 24px;
+    height: var(--rule-width);
+    background: var(--ink);
+    transition: transform var(--t-micro) var(--ease-out);
+  }
+
+  .nav__burger[aria-expanded='true'] .nav__burger-line:first-child {
+    transform: translateY(4px) rotate(45deg);
+  }
+
+  .nav__burger[aria-expanded='true'] .nav__burger-line:last-child {
+    transform: translateY(-4px) rotate(-45deg);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-overlay);
+    background: var(--paper);
+    display: grid;
+    align-content: center;
+  }
+
+  .overlay__nav {
+    display: grid;
+    gap: var(--space-m);
+    width: 100%;
+  }
+
+  .overlay__link {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-s);
+    font-family: var(--font-display);
+    font-size: var(--step-4);
+    font-weight: 540;
+    line-height: 1.1;
+    text-decoration: none;
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  .overlay.is-open .overlay__link {
+    animation: overlay-in 500ms var(--ease-out) forwards;
+    animation-delay: calc(var(--i) * 70ms);
+  }
+
+  .overlay__num {
+    color: var(--tomato);
+  }
+
+  .overlay__cta {
+    justify-self: start;
+    margin-top: var(--space-l);
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+
+  /* Mobile Bottom Bar */
+  .mobile-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--space-s) var(--gutter);
+    background: linear-gradient(to top, var(--surface-page) 60%, transparent);
+    z-index: calc(var(--z-nav) - 1);
+    display: flex;
+    justify-content: center;
+    pointer-events: none; /* Let clicks pass through the gradient */
+  }
+
+  .mobile-bottom-bar__cta {
+    width: 100%;
+    max-width: 400px;
+    pointer-events: auto;
+    box-shadow: var(--shadow-print);
+    /* Ensure it stands out and is extremely reachable */
+    min-height: 56px;
+    font-size: var(--step-0);
+  }
+
+  @keyframes overlay-in {
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .overlay__link {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .nav__inner {
+      height: var(--nav-height-lg);
+    }
+
+    .nav__links {
+      display: flex;
+    }
+
+    .desktop-only {
+      display: inline-flex !important;
+    }
+
+    .mobile-bottom-bar {
+      display: none;
+    }
+
+    .nav__burger,
+    .overlay {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  function initNav() {
+    const burger = document.querySelector<HTMLButtonElement>('[data-burger]');
+    const overlay = document.querySelector<HTMLElement>('[data-overlay]');
+    const nav = document.querySelector<HTMLElement>('[data-nav]');
+
+    if (nav && !nav.dataset.init) {
+      nav.dataset.init = 'true';
+      const handleScroll = () => {
+        if (window.scrollY > 20) { /* Reduced from 50 to trigger earlier */
+          nav.classList.add('is-scrolled');
+        } else {
+          nav.classList.remove('is-scrolled');
+        }
+      };
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      handleScroll(); // init
+    }
+
+    if (burger && overlay && !burger.dataset.init) {
+      burger.dataset.init = 'true';
+      const setOpen = (open: boolean) => {
+        burger.setAttribute('aria-expanded', String(open));
+        overlay.hidden = !open;
+        overlay.classList.toggle('is-open', open);
+        document.body.style.overflow = open ? 'hidden' : '';
+      };
+
+      burger.addEventListener('click', () => {
+        setOpen(burger.getAttribute('aria-expanded') !== 'true');
+      });
+
+      overlay.querySelectorAll('[data-overlay-link]').forEach((a) => {
+        a.addEventListener('click', () => setOpen(false));
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') setOpen(false);
+      });
+    }
+  }
+
+  document.addEventListener('astro:page-load', initNav);
+  initNav();
+</script>

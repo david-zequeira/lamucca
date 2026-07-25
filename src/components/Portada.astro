@@ -1,0 +1,248 @@
+---
+/**
+ * La portada — the venue cover card.
+ * Same structure for every casa; character always different (design-system §6.4).
+ * Carries the discovery taxonomy as data-* so the picker can filter without JS
+ * needing to know anything about the content model.
+ */
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  venue: CollectionEntry<'restaurants'>;
+  index?: number;
+  compact?: boolean;
+}
+
+const { venue, index, compact = false } = Astro.props;
+const d = venue.data;
+const num = index !== undefined ? String(index + 1).padStart(2, '0') : null;
+---
+
+<article
+  class:list={['portada', { 'portada--compact': compact }]}
+  data-venue
+  data-moods={d.moods.join(' ')}
+  data-occasions={d.occasions.join(' ')}
+  data-zone={d.zone}
+  data-times={d.times.join(' ')}
+  data-groups={d.groups.join(' ')}
+>
+  <a class={`campo campo--${d.accent} portada__campo`} href={`/restaurantes/${d.slug}/`} tabindex="-1" aria-hidden="true">
+    <picture>
+      <!-- Modern formats, progressive enhancement -->
+      <source type="image/avif" srcset={`/assets/casas/${d.slug}.avif`} />
+      <source type="image/webp" srcset={`/assets/casas/${d.slug}.webp`} />
+      <img 
+        src={`/assets/casas/${d.slug}.jpg`} 
+        alt={`Interior de ${d.name}`}
+        loading="lazy"
+        decoding="async"
+        width="400"
+        height="500"
+        class="portada__img"
+      />
+    </picture>
+    <span class="campo__meta">
+      {num && <span class="label">{num}</span>}
+      {d.openedYear && <span class="label">{d.openedYear}</span>}
+    </span>
+  </a>
+
+  <div class="portada__body">
+    <h3 class="portada__name">
+      <a href={`/restaurantes/${d.slug}/`}>{d.name}</a>
+    </h3>
+    <p class="portada__hood label">{d.neighborhood}</p>
+    <p class="portada__tag voice">{d.tagline}</p>
+
+    {d.features.length > 0 && (
+      <ul class="portada__traits">
+        {d.features.slice(0, 2).map((f) => (
+          <li class="tag">{f}</li>
+        ))}
+      </ul>
+    )}
+
+    <div class="portada__actions">
+      {d.bookingUrl ? (
+        <a
+          class="btn btn--stamp portada__stamp"
+          href={d.bookingUrl}
+          rel="noopener"
+          target="_blank"
+          data-book={d.slug}
+        >
+          Reservar
+        </a>
+      ) : (
+        <a class="btn portada__stamp" href={`/restaurantes/${d.slug}/`}>Ver la casa</a>
+      )}
+      <a class="portada__more label" href={`/restaurantes/${d.slug}/`}>
+        Conocer <span aria-hidden="true">→</span>
+      </a>
+    </div>
+  </div>
+</article>
+
+<style>
+  .portada {
+    display: flex;
+    flex-direction: column;
+    border: var(--rule);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    background: var(--surface-page);
+    transition: transform var(--t-micro) var(--ease-out), box-shadow var(--t-micro) var(--ease-out);
+  }
+
+  .portada__campo {
+    display: block;
+    text-decoration: none;
+    --campo-ratio: var(--ratio-cover);
+    position: relative;
+    overflow: hidden;
+    transform: translateZ(0); /* Force layer creation for smooth image scaling */
+  }
+
+  .portada__img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    opacity: 0.9;
+    mix-blend-mode: multiply; /* Optional: integrates with the brand color field */
+    transition: transform 10s var(--ease-out), opacity var(--t-enter) var(--ease-out);
+    will-change: transform;
+  }
+
+  .campo__meta {
+    position: relative;
+    z-index: 1;
+  }
+
+  .portada__body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: var(--space-m);
+    border-top: var(--rule);
+  }
+
+  .portada__name {
+    font-size: var(--step-2);
+    line-height: var(--leading-card);
+    letter-spacing: var(--track-tight);
+  }
+
+  .portada__name a {
+    text-decoration: none;
+  }
+
+  .portada__name a::after {
+    /* the whole card is clickable, but only the name is the link */
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .portada {
+    position: relative;
+  }
+
+  .portada__hood {
+    margin-top: var(--space-2xs);
+    color: var(--text-tertiary);
+  }
+
+  .portada__tag {
+    margin-top: var(--space-s);
+    font-size: var(--step-1);
+    color: var(--text-secondary);
+  }
+
+  .portada__traits {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2xs);
+    margin-top: var(--space-s);
+    padding: 0;
+    list-style: none;
+  }
+
+  .portada__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-m);
+    margin-top: auto;
+    padding-top: var(--space-m);
+    position: relative;
+    z-index: 2; /* above the card-wide link overlay */
+  }
+
+  @media (max-width: 480px) {
+    .portada__actions {
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--space-s);
+    }
+    
+    .portada__stamp {
+      width: 100%;
+    }
+    
+    .portada__more {
+      justify-content: center;
+    }
+  }
+
+  .portada__stamp {
+    min-height: 44px;
+    padding-block: 0.6em;
+  }
+
+  .portada__more {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px; /* tap target — WCAG 2.5.8 */
+    text-decoration: none;
+    color: var(--text-accent);
+  }
+
+  .portada--compact .portada__campo {
+    --campo-ratio: 5 / 2;
+  }
+
+  .portada--compact .portada__tag,
+  .portada--compact .portada__traits {
+    display: none;
+  }
+
+  @media (hover: hover) {
+    .portada:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-print);
+    }
+
+    .portada:hover .portada__img {
+      transform: scale(1.05);
+    }
+
+    .portada__more:hover {
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .portada {
+      transition: box-shadow var(--t-micro) var(--ease-out);
+    }
+
+    .portada:hover {
+      transform: none;
+    }
+  }
+</style>

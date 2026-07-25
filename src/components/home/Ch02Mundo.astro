@@ -1,0 +1,213 @@
+---
+/**
+ * CHAPTER 02 — EL MUNDO
+ * Lamucca as a universe, not a list of branches. Concept families first;
+ * individual casas are met later, in Chapter 04, when the user is choosing.
+ */
+import { getCollection } from 'astro:content';
+
+const all = await getCollection('restaurants');
+const count = (c: string) => all.filter((r) => r.data.concept === c).length;
+
+/* Descriptions below are compressed from each concept's sourced venue copy. */
+const familias = [
+  {
+    key: 'lamucca',
+    name: 'Lamucca',
+    n: count('lamucca'),
+    accent: 'tomato',
+    what: 'La casa madre. Cocina abierta todo el día, carta sin fronteras y ocho barrios distintos.',
+  },
+  {
+    key: 'pescaderia',
+    name: 'La Pescadería',
+    n: count('pescaderia'),
+    accent: 'olive',
+    what: 'Campo, mar, tierra y arroces en la vieja pescadería de Ballesta — y su hermana de Salamanca.',
+  },
+  {
+    key: 'ultramarines',
+    name: 'Ultramarines del Coso',
+    n: count('ultramarines'),
+    accent: 'tomato',
+    what: 'Tabernas con alma de barrio y carácter castizo, donde la casquería fina es la protagonista.',
+  },
+  {
+    key: 'enbruto',
+    name: 'En Bruto',
+    n: count('enbruto'),
+    accent: 'butter',
+    what: 'El obrador-laboratorio: pan artesano, pastelería y café de especialidad premiado.',
+  },
+  {
+    key: 'singulares',
+    name: 'Los singulares',
+    n: count('club') + count('makaa') + count('kiosco') + count('mar'),
+    accent: 'olive',
+    what: 'Un club con contraseña, un rooftop con piscina, un kiosco de 1907 y una casa junto al mar.',
+  },
+];
+
+const cifras = [
+  { n: '18', label: 'casas' },
+  { n: '2008', label: 'desde' },
+  { n: '2', label: 'ciudades' },
+  { n: '1', label: 'familia' },
+];
+---
+
+<section class="mundo" id="mundo" aria-labelledby="mundo-title">
+  <div class="container">
+    <header class="capitulo-head" data-reveal>
+      <p class="capitulo-num label">Capítulo 02 — El mundo</p>
+      <h2 class="capitulo-title" id="mundo-title">
+        No somos una cadena.<br />Somos una <em>familia</em> de casas.
+      </h2>
+      <p class="capitulo-sub">
+        Ninguna se parece a la anterior porque ninguna se planeó. Cada local llamó
+        primero — una tahona, una floristería, una pescadería, un kiosco de 1907 — y
+        nosotros abrimos la puerta.
+      </p>
+    </header>
+
+    <!-- Las cifras -->
+    <ul class="cifras" data-reveal>
+      {cifras.map((c) => (
+        <li class="cifra">
+          <span class="cifra__n">{c.n}</span>
+          <span class="cifra__label label">{c.label}</span>
+        </li>
+      ))}
+    </ul>
+
+    <!-- Las familias — the constellation -->
+    <ul class="familias">
+      {familias.map((f, i) => (
+        <li class="familia" data-reveal style={`--reveal-delay: ${(i % 3) * 80}ms`}>
+          <span class={`familia__marca campo campo--${f.accent}`} aria-hidden="true"></span>
+          <div class="familia__body">
+            <h3 class="familia__name">
+              {f.name}
+              <span class="familia__n label">{f.n} {f.n === 1 ? 'casa' : 'casas'}</span>
+            </h3>
+            <p class="familia__what">{f.what}</p>
+          </div>
+        </li>
+      ))}
+    </ul>
+
+    <p class="mundo__cta" data-reveal>
+      <a href="#descubre" class="btn">Ver todas las casas</a>
+    </p>
+  </div>
+</section>
+
+<style>
+  .mundo {
+    padding-block: var(--space-3xl) var(--space-2xl);
+  }
+
+  /* --- Las cifras --- */
+  .cifras {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-l) var(--space-m);
+    list-style: none;
+    padding: var(--space-l) 0;
+    margin: 0 0 var(--space-2xl);
+    border-block: var(--rule);
+  }
+
+  .cifra {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs);
+  }
+
+  .cifra__n {
+    font-family: var(--font-display);
+    font-size: var(--step-4);
+    font-weight: var(--weight-display);
+    line-height: 1;
+    letter-spacing: var(--track-title);
+  }
+
+  .cifra__label {
+    color: var(--text-tertiary);
+  }
+
+  /* --- Las familias --- */
+  .familias {
+    display: grid;
+    gap: 0;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border-top: var(--rule);
+  }
+
+  .familia {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: var(--space-m);
+    padding-block: var(--space-l);
+    border-bottom: var(--rule);
+    transition: transform var(--t-micro) var(--ease-out);
+  }
+
+  .familia__marca {
+    width: 56px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: var(--rule);
+    transition: transform var(--t-micro) var(--ease-out);
+  }
+
+  .familia__name {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: var(--space-s);
+    font-size: var(--step-2);
+    line-height: var(--leading-card);
+  }
+
+  .familia__n {
+    color: var(--text-accent);
+  }
+
+  .familia__what {
+    margin-top: var(--space-2xs);
+    color: var(--text-secondary);
+    max-width: 54ch;
+  }
+
+  .mundo__cta {
+    margin-top: var(--space-xl);
+  }
+
+  @media (min-width: 700px) {
+    .cifras {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .familia {
+      grid-template-columns: 72px 1fr;
+      gap: var(--space-l);
+    }
+
+    .familia__marca {
+      width: 72px;
+    }
+  }
+
+  @media (hover: hover) {
+    .familia:hover {
+      transform: translateX(8px);
+    }
+    .familia:hover .familia__marca {
+      transform: scale(1.1);
+    }
+  }
+</style>

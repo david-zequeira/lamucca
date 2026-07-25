@@ -1,0 +1,228 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+
+export async function getStaticPaths() {
+  const restaurants = await getCollection('restaurants');
+  return restaurants.map((r) => ({ params: { slug: r.data.slug }, props: { r } }));
+}
+
+const { r } = Astro.props;
+const d = r.data;
+const base = import.meta.env.BASE_URL;
+const phonePretty = d.phone?.replace(/(\d{2,3})(\d{3})(\d{2})(\d{2})$/, '$1 $2 $3 $4');
+---
+
+<Base
+  title={`${d.name} — ${d.neighborhood} · Lamucca`}
+  description={`${d.tagline}. ${d.description}`}
+>
+  <Nav />
+
+  <main class="venue">
+    <!-- WOW 4 «El pase» — the destination of the card→page morph -->
+    <section class={`venue__hero venue__hero--${d.accent} vt-casa`} data-vt-fixed>
+      <div class="container">
+        <p class="label venue__crumb" data-reveal>
+          <a href={`${base}#descubre`}>Restaurantes</a> · {d.neighborhood}
+        </p>
+        <h1 class="venue__name" data-reveal style="--reveal-delay: 100ms">{d.name}</h1>
+        <p class="venue__tagline voice" data-reveal style="--reveal-delay: 200ms">{d.tagline}</p>
+      </div>
+    </section>
+
+    <section class="venue__content container">
+      <div class="venue__main">
+        <p class="venue__desc" data-reveal>{d.description}</p>
+
+        {d.character.length > 0 && (
+          <ul class="venue__traits" data-reveal>
+            {d.character.map((c) => (
+              <li class="venue__trait label">{c}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <aside class="venue__aside" data-reveal>
+        <dl class="venue__facts">
+          <div class="venue__fact">
+            <dt class="label">Dirección</dt>
+            <dd>{d.address}</dd>
+          </div>
+          {d.openedYear && (
+            <div class="venue__fact">
+              <dt class="label">En el barrio desde</dt>
+              <dd>{d.openedYear}</dd>
+            </div>
+          )}
+          {phonePretty && (
+            <div class="venue__fact">
+              <dt class="label">Teléfono</dt>
+              <dd><a href={`tel:+34${d.phone}`}>{phonePretty}</a></dd>
+            </div>
+          )}
+        </dl>
+
+        <div class="venue__cta">
+          {d.bookingUrl ? (
+            <a class="btn btn--stamp" href={d.bookingUrl} rel="noopener" target="_blank">
+              Reservar mesa
+            </a>
+          ) : (
+            phonePretty && (
+              <a class="btn btn--stamp" href={`tel:+34${d.phone}`}>Llamar · {phonePretty}</a>
+            )
+          )}
+          <a class="btn" href={`${base}#descubre`}>Ver más casas</a>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <!-- Mobile: booking never more than one tap away (DESIGN-DECISIONS #007) -->
+  {d.bookingUrl && (
+    <div class="reserve-bar">
+      <span class="reserve-bar__name">{d.name}</span>
+      <a class="btn btn--stamp reserve-bar__btn" href={d.bookingUrl} rel="noopener" target="_blank">
+        Reservar
+      </a>
+    </div>
+  )}
+
+  <Footer />
+</Base>
+
+<style>
+  .venue__hero {
+    padding-block: var(--space-2xl) var(--space-xl);
+    border-bottom: 1.5px solid var(--ink);
+  }
+
+  .venue__hero--tomato { background: var(--tomato); color: var(--paper); }
+  .venue__hero--olive { background: var(--olive); color: var(--paper); }
+  .venue__hero--butter { background: var(--butter); color: var(--ink); }
+
+  .venue__crumb a {
+    color: inherit;
+    text-decoration: none;
+    opacity: 0.85;
+  }
+
+  .venue__crumb a:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  .venue__name {
+    margin-top: var(--space-m);
+    font-size: var(--step-5);
+    max-width: 14ch;
+  }
+
+  .venue__tagline {
+    margin-top: var(--space-s);
+    font-size: var(--step-2);
+    opacity: 0.92;
+  }
+
+  .venue__content {
+    display: grid;
+    gap: var(--space-xl);
+    padding-block: var(--space-2xl);
+  }
+
+  .venue__desc {
+    font-size: var(--step-1);
+    line-height: 1.6;
+    max-width: 52ch;
+  }
+
+  .venue__traits {
+    list-style: none;
+    padding: 0;
+    margin-top: var(--space-l);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+
+  .venue__trait {
+    border: 1.5px solid var(--ink);
+    border-radius: 999px;
+    padding: 0.5em 1em;
+  }
+
+  .venue__facts {
+    display: grid;
+    gap: var(--space-m);
+    margin: 0;
+    border: 1.5px solid var(--ink);
+    border-radius: 14px;
+    padding: var(--space-m);
+    background: var(--paper-deep);
+  }
+
+  .venue__fact dt {
+    color: var(--ink-faint);
+    margin-bottom: 0.2em;
+  }
+
+  .venue__fact dd {
+    margin: 0;
+    font-size: var(--step-0);
+  }
+
+  .venue__cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-s);
+    margin-top: var(--space-m);
+  }
+
+  .reserve-bar {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: var(--z-sticky);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-s);
+    padding: var(--space-xs) var(--gutter) calc(var(--space-xs) + env(safe-area-inset-bottom));
+    background: var(--paper);
+    border-top: 1.5px solid var(--ink);
+  }
+
+  .reserve-bar__name {
+    font-family: var(--font-display);
+    font-weight: 560;
+    font-size: var(--step-0);
+  }
+
+  .reserve-bar__btn {
+    min-height: 44px;
+    padding-block: 0.55em;
+  }
+
+  main {
+    padding-bottom: 76px; /* keep content clear of the reserve bar */
+  }
+
+  @media (min-width: 900px) {
+    .venue__content {
+      grid-template-columns: 1.4fr 1fr;
+      gap: var(--space-2xl);
+    }
+
+    .reserve-bar {
+      display: none;
+    }
+
+    main {
+      padding-bottom: 0;
+    }
+  }
+</style>

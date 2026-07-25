@@ -1,0 +1,45 @@
+{
+  "name": "Lamucca de Prado",
+  "slug": "lamucca-de-prado",
+  "concept": "lamucca",
+  "neighborhood": "Barrio de las Letras",
+  "address": "Calle del Prado 16, Madrid",
+  "city": "Madrid",
+  "tagline": "El alma del viejo Café del Prado",
+  "description": "Dos plantas y más de 140 cubiertos sobre el solar del Café del Prado del siglo XIX, tertulia de Ramón y Cajal. Estilo industrial vintage y público de teatro, a un paso de los escenarios de Las Letras.",
+  "character": [
+    "Dos plantas",
+    "Herencia de café del XIX",
+    "Público de teatro"
+  ],
+  "phone": "915210000",
+  "bookingUrl": "https://www.covermanager.com/reservation/module_restaurant/restaurante-lamuccadeprado/spanish",
+  "openedYear": 2010,
+  "order": 2,
+  "accent": "butter",
+  "sources": [
+    "https://www.lamuccacompany.com/lamucca-de-prado/"
+  ],
+  "verified": true,
+  "moods": [
+    "animado"
+  ],
+  "occasions": [
+    "amigos",
+    "celebracion",
+    "tardeo"
+  ],
+  "zone": "centro",
+  "times": [
+    "comida",
+    "cena"
+  ],
+  "groups": [
+    "pocos",
+    "muchos"
+  ],
+  "features": [
+    "Dos plantas",
+    "140 cubiertos"
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "name": "Lamucca de Plaza España",
+  "slug": "lamucca-de-plaza-espana",
+  "concept": "lamucca",
+  "neighborhood": "Plaza de España",
+  "address": "Plaza de España 11, 28008 Madrid",
+  "city": "Madrid",
+  "tagline": "Amarillo, el color del buen humor",
+  "description": "Una teatral paleta de color con el amarillo como protagonista, terraza con vistas a la plaza y El Parquesito, la zona de juegos donde los peques también son muckeros. Café de especialidad, kombucha orgánica y coctelería.",
+  "character": [
+    "Terraza a la plaza",
+    "El Parquesito para peques",
+    "Paleta amarilla"
+  ],
+  "phone": "915210000",
+  "bookingUrl": "https://www.covermanager.com/reservation/module_restaurant/restaurante-lamuccaplazaespana/spanish",
+  "openedYear": 2022,
+  "order": 8,
+  "accent": "butter",
+  "sources": [
+    "https://www.lamuccacompany.com/lamucca-de-plaza-espana/",
+    "https://restauracionnews.com/2022/08/ofelia-marin-cofundadora-de-lamucca-entrevista/"
+  ],
+  "verified": true,
+  "moods": [
+    "luminoso",
+    "animado"
+  ],
+  "occasions": [
+    "familia",
+    "amigos",
+    "tardeo"
+  ],
+  "zone": "centro",
+  "times": [
+    "desayuno",
+    "comida",
+    "tardeo",
+    "cena"
+  ],
+  "groups": [
+    "ninos",
+    "pocos",
+    "muchos"
+  ],
+  "features": [
+    "Terraza",
+    "Zona de juegos"
+  ]
+}

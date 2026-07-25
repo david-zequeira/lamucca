@@ -1,0 +1,135 @@
+---
+import '@fontsource-variable/fraunces';
+import '@fontsource-variable/fraunces/wght-italic.css';
+import '@fontsource-variable/archivo';
+import '../styles/tokens.css';
+import '../styles/base.css';
+import '../styles/press.css';
+import '../styles/motion.css';
+
+import Concierge from '../components/Concierge.astro';
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://david-zequeira.github.io');
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#f4eee3" />
+    <link rel="icon" href={`${base}favicon.svg`} type="image/svg+xml" />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_ES" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Performance: Preload Critical LCP Image -->
+    <link rel="preload" as="image" href={`${base}assets/hero-poster.webp`} type="image/webp" fetchpriority="high" />
+    
+    <!-- Performance: Preconnect to external analytics/booking if needed -->
+    <!-- <link rel="preconnect" href="https://www.covermanager.com" crossorigin /> -->
+  </head>
+  <body class="tirada">
+    <a class="skip" href="#main">Saltar al contenido</a>
+    <slot />
+
+    <Concierge />
+
+    <script>
+      import '../scripts/motion.js';
+      
+      // 1. Narrative reveals. The .is-ready gate keeps everything visible if JS
+      //    never runs, so no content depends on this script.
+      document.documentElement.classList.add('is-ready');
+
+      const reveals = document.querySelectorAll('[data-reveal]');
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (e.isIntersecting) {
+                e.target.classList.add('is-in');
+                io.unobserve(e.target);
+              }
+            }
+          },
+          { rootMargin: '0px 0px -10% 0px', threshold: 0.1 }
+        );
+        reveals.forEach((el) => io.observe(el));
+      } else {
+        reveals.forEach((el) => el.classList.add('is-in'));
+      }
+
+      // 2. La edición — the paper changes with Madrid's clock.
+      //    Cosmetic only: shifts accent temperature, writes the masthead line and
+      //    highlights the verb of the moment. Never affects layout.
+      const MADRID = 'Europe/Madrid';
+      const parts = new Intl.DateTimeFormat('es-ES', {
+        timeZone: MADRID,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }).formatToParts(new Date());
+
+      const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? '13');
+      const minute = parts.find((p) => p.type === 'minute')?.value ?? '00';
+
+      const edition =
+        hour >= 6 && hour < 12
+          ? { key: 'manana', name: 'Edición de la mañana' }
+          : hour >= 12 && hour < 17
+            ? { key: 'aperitivo', name: 'Edición del aperitivo' }
+            : hour >= 17 && hour < 21
+              ? { key: 'tarde', name: 'Edición de la tarde' }
+              : { key: 'noche', name: 'Edición de la noche' };
+
+      document.documentElement.dataset.edition = edition.key;
+
+      const line = document.querySelector('[data-edition-line]');
+      if (line) {
+        line.textContent = `${edition.name} · Madrid, ${String(hour).padStart(2, '0')}:${minute} · cocina abierta`;
+      }
+
+      const verb = document.querySelector(`[data-verb-edition="${edition.key}"]`);
+      if (verb instanceof HTMLElement) verb.dataset.verbNow = 'true';
+
+      // 3. WOW 4 «El pase» — the shared-element morph between a casa card and its
+      //    page. The name is assigned to the clicked card only, so exactly one
+      //    pair ever morphs; the CSS declares the transition itself.
+      const clearPase = () => {
+        document.querySelectorAll('.vt-casa').forEach((el) => {
+          if (!el.hasAttribute('data-vt-fixed')) el.classList.remove('vt-casa');
+        });
+      };
+
+      document.addEventListener(
+        'click',
+        (event) => {
+          const target = event.target;
+          if (!(target instanceof Element)) return;
+          const link = target.closest('a[href^="/restaurantes/"]');
+          if (!link) return;
+          clearPase();
+          const card = link.closest('[data-venue]');
+          const field = card?.querySelector('.campo') ?? link.querySelector('.campo');
+          field?.classList.add('vt-casa');
+        },
+        true
+      );
+
+      window.addEventListener('pageshow', clearPase);
+    </script>
+  </body>
+</html>

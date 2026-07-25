@@ -1,0 +1,41 @@
+{
+  "name": "En Bruto",
+  "slug": "en-bruto",
+  "concept": "enbruto",
+  "neighborhood": "Salesas · Malasaña",
+  "address": "Salesas · Plaza de Carlos Cambronero 2, Madrid",
+  "city": "Madrid",
+  "tagline": "El obrador-laboratorio",
+  "description": "Panadería artesana, pastelería y café de especialidad: el obrador-laboratorio del grupo, ganador del Madrid Roaster Competition 2023. Desde 2025, también en Malasaña.",
+  "character": [
+    "Pan artesano «Pam!»",
+    "Madrid Roaster Competition 2023",
+    "Dos obradores"
+  ],
+  "order": 14,
+  "accent": "butter",
+  "sources": [
+    "https://www.profesionalhoreca.com/2025/01/03/en-bruto-el-obrador-laboratorio-panaderia-y-cafeteria-de-lamucca-en-madrid/"
+  ],
+  "verified": true,
+  "moods": [
+    "luminoso"
+  ],
+  "occasions": [
+    "trabajo",
+    "tardeo"
+  ],
+  "zone": "centro",
+  "times": [
+    "desayuno",
+    "tardeo"
+  ],
+  "groups": [
+    "solo",
+    "dos"
+  ],
+  "features": [
+    "Café de especialidad",
+    "Pan artesano"
+  ]
+}

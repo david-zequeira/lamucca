@@ -1,0 +1,47 @@
+{
+  "name": "Lamucca de Pez",
+  "slug": "lamucca-de-pez",
+  "concept": "lamucca",
+  "neighborhood": "Malasaña",
+  "address": "Plaza de Carlos Cambronero 4, 28004 Madrid",
+  "city": "Madrid",
+  "tagline": "Donde empezó todo",
+  "description": "Una antigua tahona cerrada durante décadas, hormigón, madera y acero, y un graffiti de clara inspiración banksyana. Aquí abrió Lamucca el 1 de mayo de 2008 — y aquí nació la pizza de boletus.",
+  "character": [
+    "La primera casa",
+    "Pizza de boletus",
+    "Graffiti y hormigón"
+  ],
+  "phone": "915210000",
+  "bookingUrl": "https://www.covermanager.com/reservation/module_restaurant/restaurante-lamuccadepez/spanish",
+  "openedYear": 2008,
+  "order": 1,
+  "accent": "tomato",
+  "sources": [
+    "https://www.lamuccacompany.com/lamucca-de-pez/",
+    "https://www.esmadrid.com/en/restaurants/lamucca-pez-carlos-cambronero"
+  ],
+  "verified": true,
+  "moods": [
+    "animado",
+    "castizo"
+  ],
+  "occasions": [
+    "amigos",
+    "pareja",
+    "tardeo"
+  ],
+  "zone": "malasana",
+  "times": [
+    "comida",
+    "tardeo",
+    "cena"
+  ],
+  "groups": [
+    "dos",
+    "pocos"
+  ],
+  "features": [
+    "La primera casa"
+  ]
+}

@@ -1,0 +1,202 @@
+---
+/**
+ * CHAPTER 07 — LA MESA
+ * The conversion finale. Every bookable casa, one gesture from a table.
+ * Real CoverManager modules; the phone is always present as a fallback; large
+ * parties are routed rather than dead-ended.
+ */
+import { getCollection } from 'astro:content';
+
+const bookable = (await getCollection('restaurants'))
+  .filter((r) => r.data.bookingUrl)
+  .sort((a, b) => a.data.order - b.data.order);
+---
+
+<section class="reserva" id="reserva" data-ink data-ink-spread aria-labelledby="reserva-title">
+  <div class="container">
+    <header class="reserva__head" data-reveal>
+      <p class="capitulo-num label">Capítulo 07 — La mesa</p>
+      <h2 class="reserva__title" id="reserva-title">
+        ¿Nos vemos<br /><em class="voice">esta noche?</em>
+      </h2>
+      <p class="reserva__sub">
+        Elige casa y reserva. Si no sabes cuál, vuelve arriba y déjanos que te
+        sentemos nosotros.
+      </p>
+    </header>
+
+    <ul class="mesas">
+      {bookable.map((r, i) => (
+        <li class="mesa" data-reveal style={`--reveal-delay: ${(i % 4) * 50}ms`}>
+          <a class="mesa__name" href={`/restaurantes/${r.data.slug}/`}>
+            <span class={`mesa__tick mesa__tick--${r.data.accent}`} aria-hidden="true"></span>
+            {r.data.name}
+          </a>
+          <span class="mesa__hood label">{r.data.neighborhood}</span>
+          <a
+            class="btn btn--stamp mesa__stamp"
+            href={r.data.bookingUrl}
+            rel="noopener"
+            target="_blank"
+            data-book={r.data.slug}
+          >
+            Reservar<span class="sr-only"> en {r.data.name}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+
+    <div class="reserva__pie">
+      <p class="reserva__tel" data-reveal>
+        ¿Prefieres hablarlo?&#32;
+        <a href="tel:+34915210000">91 521 00 00</a>
+      </p>
+      <p class="reserva__grupos" data-reveal>
+        Para grupos grandes, reservados y fiestas privadas, escríbenos y lo montamos:&#32;
+        <a href="https://www.lamuccacompany.com/" rel="noopener" target="_blank">eventos y grupos</a>.
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .reserva {
+    padding-block: var(--space-3xl);
+  }
+
+  .reserva__head {
+    margin-bottom: var(--space-2xl);
+  }
+
+  .reserva__title {
+    font-size: var(--step-5);
+    line-height: var(--leading-hero);
+    letter-spacing: var(--track-title);
+    color: var(--text-primary);
+  }
+
+  .reserva__title em {
+    color: var(--butter);
+  }
+
+  .reserva__sub {
+    margin-top: var(--space-m);
+    font-size: var(--step-1);
+    color: var(--text-secondary);
+    max-width: 40ch;
+  }
+
+  /* --- Las mesas --- */
+  .mesas {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: var(--rule-width) solid var(--paper);
+  }
+
+  .mesa {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: var(--space-2xs) var(--space-m);
+    padding-block: var(--space-m);
+    border-bottom: var(--rule-width) solid rgb(244 238 227 / 0.35);
+  }
+
+  .mesa__name {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-family: var(--font-display);
+    font-size: var(--step-2);
+    font-weight: 540;
+    line-height: var(--leading-card);
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  .mesa__tick {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--tomato);
+    flex: none;
+  }
+
+  .mesa__tick--butter { background: var(--butter); }
+  .mesa__tick--olive { background: var(--olive); }
+
+  .mesa__hood {
+    grid-column: 1;
+    color: var(--text-tertiary);
+    padding-left: calc(10px + var(--space-xs));
+  }
+
+  .mesa__stamp {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    min-height: 44px;
+    padding-block: 0.55em;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  /* --- El pie --- */
+  .reserva__pie {
+    display: grid;
+    gap: var(--space-s);
+    margin-top: var(--space-xl);
+  }
+
+  .reserva__tel {
+    font-family: var(--font-display);
+    font-size: var(--step-2);
+    color: var(--text-primary);
+  }
+
+  .reserva__tel a {
+    color: var(--butter);
+    text-decoration: none;
+    border-bottom: var(--rule-width) solid currentColor;
+  }
+
+  .reserva__grupos {
+    color: var(--text-secondary);
+    max-width: 52ch;
+  }
+
+  .reserva__grupos a {
+    color: var(--text-primary);
+  }
+
+  @media (hover: hover) {
+    .mesa__name:hover {
+      color: var(--butter);
+    }
+  }
+
+  @media (min-width: 700px) {
+    .mesa {
+      grid-template-columns: 1fr auto auto;
+      gap: var(--space-l);
+    }
+
+    .mesa__hood {
+      grid-column: 2;
+      grid-row: 1;
+      padding-left: 0;
+      text-align: right;
+    }
+
+    .mesa__stamp {
+      grid-column: 3;
+      grid-row: 1;
+    }
+  }
+</style>

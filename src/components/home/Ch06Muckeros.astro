@@ -1,0 +1,162 @@
+---
+/**
+ * CHAPTER 06 — LOS MUCKEROS
+ * Community as proof and invitation. The dictionary entry is quoted verbatim
+ * from the brand's own homepage — never paraphrased.
+ *
+ * No counters are shown: the real numbers (pizzas served, euros donated) are the
+ * brand's own device, but we don't have live data and will not invent figures.
+ */
+---
+
+<section class="muckeros" id="muckeros" aria-labelledby="muckeros-title">
+  <div class="container">
+    <header class="capitulo-head" data-reveal>
+      <p class="capitulo-num label">Capítulo 06 — La gente</p>
+      <h2 class="capitulo-title" id="muckeros-title">
+        Esto tiene nombre:<br /><em>muckeros</em>
+      </h2>
+      <p class="capitulo-sub">
+        Camareros, cocineras, panaderos y clientes de toda la vida. La misma
+        palabra para los que sirven y los que se sientan.
+      </p>
+    </header>
+
+    <!-- La entrada de diccionario — verbatim brand text -->
+    <article class="diccionario" data-reveal>
+      <p class="diccionario__word">
+        muckero, -a
+        <span class="diccionario__phon label">/mu·ké·ro/</span>
+      </p>
+      <ol class="diccionario__defs">
+        <li>
+          <span class="diccionario__pos voice">m. y f.</span>&#32;Amante de las pizzas,
+          los nachos, las hamburguesas, las ensaladas, los cocteles, la música y el
+          buen rollo.
+        </li>
+        <li>
+          <span class="diccionario__pos voice">adj.</span>&#32;Que pertenece a la
+          Comunidad de Lamucca, y se mueve con orgullo por los mejores restaurantes
+          de Madrid.
+        </li>
+      </ol>
+      <p class="diccionario__fuente label">Definición oficial de la casa</p>
+    </article>
+
+    <div class="muckeros__grid">
+      <blockquote class="cita muckeros__cita" data-reveal>
+        <p>«Reivindicamos el valor de la sonrisa como la mayor virtud de nuestro equipo.»</p>
+        <cite>Lamucca</cite>
+      </blockquote>
+
+      <!-- El clasificado — careers, in their own recruiting words -->
+      <div class="clasificado muckeros__clasificado" data-reveal style="--reveal-delay: 120ms">
+        <p class="clasificado__head label">Se busca</p>
+        <p>
+          Gente enérgica, exigente, independiente… y una sonrisa imborrable.
+          Buscamos jefes de cocina, directores de restaurante, camareros y bartenders.
+        </p>
+        <p class="clasificado__cta">
+          <a class="muckeros__link label" href="https://www.lamuccacompany.com/trabaja-con-nosotros/" rel="noopener" target="_blank">
+            Trabaja con nosotros <span aria-hidden="true">→</span>
+          </a>
+        </p>
+      </div>
+    </div>
+
+    <p class="muckeros__cta" data-reveal>
+      <a class="btn" href="https://www.instagram.com/lamucca" rel="noopener" target="_blank">
+        Hazte muckero en Instagram
+      </a>
+    </p>
+  </div>
+</section>
+
+<style>
+  .muckeros {
+    padding-block: var(--space-2xl);
+  }
+
+  /* --- El diccionario --- */
+  .diccionario {
+    background: var(--surface-raised);
+    border: var(--rule);
+    border-radius: var(--radius-card);
+    padding: var(--space-xl) var(--space-l);
+    max-width: 44rem;
+  }
+
+  .diccionario__word {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: var(--space-s);
+    font-family: var(--font-display);
+    font-size: var(--step-3);
+    font-weight: var(--weight-semi);
+  }
+
+  .diccionario__phon {
+    color: var(--text-accent);
+    text-transform: none;
+  }
+
+  .diccionario__defs {
+    margin: var(--space-m) 0 0;
+    padding-left: 1.25em;
+    display: grid;
+    gap: var(--space-s);
+    line-height: 1.55;
+  }
+
+  .diccionario__pos {
+    color: var(--text-accent);
+  }
+
+  .diccionario__fuente {
+    margin-top: var(--space-l);
+    color: var(--text-tertiary);
+  }
+
+  /* --- Grid --- */
+  .muckeros__grid {
+    display: grid;
+    gap: var(--space-xl);
+    margin-top: var(--space-2xl);
+  }
+
+  .muckeros__cita p {
+    max-width: 20ch;
+  }
+
+  .clasificado__cta {
+    margin-top: var(--space-m);
+  }
+
+  .muckeros__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px; /* tap target — WCAG 2.5.8 */
+    color: var(--text-accent);
+    text-decoration: none;
+  }
+
+  .muckeros__cta {
+    margin-top: var(--space-xl);
+  }
+
+  @media (hover: hover) {
+    .muckeros__link:hover {
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .muckeros__grid {
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2xl);
+      align-items: start;
+    }
+  }
+</style>

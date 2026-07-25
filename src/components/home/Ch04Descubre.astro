@@ -1,0 +1,487 @@
+---
+/**
+ * CHAPTER 04 — DESCUBRE TU LAMUCCA (The Concierge)
+ * The signature product moment: A guided, editorial discovery experience.
+ * Avoids the standard grid, providing a single tailored recommendation.
+ */
+import { getCollection } from 'astro:content';
+
+const venues = (await getCollection('restaurants')).sort((a, b) => a.data.order - b.data.order);
+
+// Pre-compute the data so the client-side script has it immediately available
+const clientVenues = venues.map(v => ({
+  slug: v.data.slug,
+  name: v.data.name,
+  tagline: v.data.tagline,
+  neighborhood: v.data.neighborhood,
+  address: v.data.address,
+  bookingUrl: v.data.bookingUrl,
+  moods: v.data.moods || [],
+  occasions: v.data.occasions || [],
+  times: v.data.times || [],
+  features: v.data.features || [],
+  character: v.data.character || [],
+  accent: v.data.accent || 'tomato'
+}));
+---
+
+<section class="descubre" id="descubre" aria-labelledby="descubre-title">
+  <div class="container descubre__grid-layout">
+    <!-- Left Column: The Prompt -->
+    <div class="descubre__prompt">
+      <header class="capitulo-head" data-reveal>
+        <p class="capitulo-num label">Capítulo 04 — Encuentra tu casa</p>
+        <h2 class="capitulo-title" id="descubre-title">
+          ¿Qué te pide<br /><em>el cuerpo</em>?
+        </h2>
+        <p class="capitulo-sub">
+          Dinos tu plan. Nosotros te sentamos en la mesa perfecta.
+        </p>
+      </header>
+
+      <div class="intents" data-picker-intents data-reveal style="--reveal-delay: 150ms">
+        <button type="button" class="intent-btn" data-intent="dinner-friends">
+          <span class="intent-emoji" aria-hidden="true">👯</span>
+          <span class="intent-label">Cena con amigos</span>
+        </button>
+        <button type="button" class="intent-btn" data-intent="date-night">
+          <span class="intent-emoji" aria-hidden="true">✨</span>
+          <span class="intent-label">Cita romántica</span>
+        </button>
+        <button type="button" class="intent-btn" data-intent="after-work">
+          <span class="intent-emoji" aria-hidden="true">💼</span>
+          <span class="intent-label">After work</span>
+        </button>
+        <button type="button" class="intent-btn" data-intent="family">
+          <span class="intent-emoji" aria-hidden="true">☀️</span>
+          <span class="intent-label">Comida en familia</span>
+        </button>
+        <button type="button" class="intent-btn" data-intent="drinks">
+          <span class="intent-emoji" aria-hidden="true">🍷</span>
+          <span class="intent-label">Tardeo y copas</span>
+        </button>
+        <button type="button" class="intent-btn" data-intent="pizza">
+          <span class="intent-emoji" aria-hidden="true">🍕</span>
+          <span class="intent-label">Antojo de pizza</span>
+        </button>
+        <button type="button" class="intent-btn" data-intent="madrid-night">
+          <span class="intent-emoji" aria-hidden="true">🎸</span>
+          <span class="intent-label">Noche por Madrid</span>
+        </button>
+        <button type="button" class="intent-btn" data-intent="just-hungry">
+          <span class="intent-emoji" aria-hidden="true">🍽️</span>
+          <span class="intent-label">Tengo hambre, sin más</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Right Column: The Recommendation -->
+    <div class="descubre__result" data-picker-result>
+      <div class="concierge-empty" data-concierge-empty>
+        <p class="voice">Elige un plan para ver nuestra recomendación.</p>
+      </div>
+      <div class="concierge-card" data-concierge-card hidden>
+        <!-- Injected via script -->
+      </div>
+    </div>
+  </div>
+
+  <script is:inline define:vars={{ venuesData: clientVenues }}>
+    window.lamuccaVenues = venuesData;
+  </script>
+
+  <script>
+    import gsap from 'gsap';
+
+    const intentsConfig = {
+        'dinner-friends': {
+            match: (v) => v.occasions.includes('amigos') && v.times.includes('cena'),
+            why: 'Buscas una cena animada con amigos, y este local tiene el ambiente perfecto para compartir y alargar la noche.'
+        },
+        'date-night': {
+            match: (v) => v.occasions.includes('pareja'),
+            why: 'Buscas intimidad. Luces bajas, ambiente cuidado y un espacio donde poder hablar sin prisa.'
+        },
+        'after-work': {
+            match: (v) => v.occasions.includes('trabajo') || v.times.includes('tardeo'),
+            why: 'Es hora de soltar el teclado. La transición perfecta de la oficina a la primera copa.'
+        },
+        'family': {
+            match: (v) => v.occasions.includes('familia'),
+            why: 'Espacio cómodo, luz natural y una carta donde todos en la familia encuentran su plato favorito.'
+        },
+        'drinks': {
+            match: (v) => v.times.includes('tardeo') && v.moods.includes('animado'),
+            why: 'La tarde se alarga. Buena música, barra dispuesta y un ambiente que va subiendo de volumen.'
+        },
+        'pizza': {
+            match: (v) => v.character.some(c => c.toLowerCase().includes('pizza')) || v.name === 'Lamucca de Pez',
+            why: 'El cuerpo te pide pizza. Aquí es donde nacieron nuestras míticas recetas al horno.'
+        },
+        'madrid-night': {
+            match: (v) => v.times.includes('tarde') || v.moods.includes('castizo'),
+            why: 'Quieres vivir Madrid. Castizo, auténtico y con la energía del barrio latiendo en la puerta.'
+        },
+        'just-hungry': {
+            match: (v) => true, // fallback matches all, we just shuffle
+            why: 'A veces no hace falta plan. Cocina ininterrumpida, producto de primera y un hueco siempre para ti.'
+        }
+    };
+
+    const container = document.querySelector('[data-picker-intents]');
+    const buttons = document.querySelectorAll('.intent-btn');
+    const emptyState = document.querySelector('[data-concierge-empty]');
+    const cardState = document.querySelector('[data-concierge-card]');
+    
+    // Fallback if component is missing
+    if (container && cardState && emptyState && window.lamuccaVenues) {
+      
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          // Update active state
+          buttons.forEach(b => b.setAttribute('aria-pressed', 'false'));
+          btn.setAttribute('aria-pressed', 'true');
+
+          const intentKey = btn.getAttribute('data-intent');
+          const config = intentsConfig[intentKey];
+
+          // Filter venues
+          let matches = window.lamuccaVenues.filter(config.match);
+          if (matches.length === 0) matches = window.lamuccaVenues; // Safety fallback
+
+          // Pick a random match to keep it playful and discoverable
+          const pick = matches[Math.floor(Math.random() * matches.length)];
+
+          renderCard(pick, config.why);
+
+          // On mobile, scroll the result into view for better one-handed experience
+          if (window.innerWidth < 900) {
+            setTimeout(() => {
+              cardState.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+          }
+        });
+      });
+
+      function renderCard(venue, whyText) {
+        const base = import.meta.env.BASE_URL;
+        // Build the HTML with responsive imagery placeholders
+        const html = `
+          <a class="campo campo--${venue.accent} concierge__hero vt-casa" href="${base}restaurantes/${venue.slug}/">
+            <picture>
+              <source type="image/avif" srcset="${base}assets/casas/${venue.slug}.avif" />
+              <source type="image/webp" srcset="${base}assets/casas/${venue.slug}.webp" />
+              <img 
+                src="${base}assets/casas/${venue.slug}.jpg" 
+                alt="Interior de ${venue.name}"
+                loading="lazy"
+                decoding="async"
+                width="800"
+                height="400"
+              />
+            </picture>
+          </a>
+          <div class="concierge__body">
+            <h3 class="concierge__title">Creemos que <strong>${venue.name}</strong> es tu sitio hoy.</h3>
+            <p class="concierge__why">${whyText}</p>
+            
+            <div class="concierge__meta">
+              <div class="meta-item">
+                <span class="label">Atmósfera</span>
+                <span class="value">${venue.moods.length ? venue.moods.join(', ') : 'Acogedor'}</span>
+              </div>
+              <div class="meta-item">
+                <span class="label">Ubicación</span>
+                <span class="value">${venue.neighborhood}</span>
+              </div>
+              <div class="meta-item">
+                <span class="label">Ideal para</span>
+                <span class="value">${venue.occasions.length ? venue.occasions.slice(0,2).join(', ') : 'Cualquier plan'}</span>
+              </div>
+              <div class="meta-item">
+                <span class="label">Destaca por</span>
+                <span class="value">${venue.character.length ? venue.character[0] : 'Nuestra carta abierta'}</span>
+              </div>
+            </div>
+
+            <div class="concierge__actions">
+              <span class="concierge__status">Cocina abierta</span>
+              ${venue.bookingUrl 
+                ? `<a href="${venue.bookingUrl}" target="_blank" rel="noopener" class="btn btn--stamp btn--editorial">Reservar mesa</a>`
+                : `<a href="${base}restaurantes/${venue.slug}/" class="btn btn--editorial">Ver la casa</a>`
+              }
+            </div>
+          </div>
+        `;
+
+        // Cross-fade animation with GSAP
+        if (!emptyState.hidden) {
+          // First time opening
+          gsap.to(emptyState, { 
+            opacity: 0, 
+            duration: 0.3, 
+            onComplete: () => {
+              emptyState.hidden = true;
+              cardState.innerHTML = html;
+              cardState.hidden = false;
+              gsap.fromTo(cardState, 
+                { opacity: 0, y: 30, scale: 0.98 },
+                { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: 'power3.out' }
+              );
+            }
+          });
+        } else {
+          // Switching between recommendations
+          gsap.to(cardState, {
+            opacity: 0,
+            y: 10,
+            duration: 0.2,
+            onComplete: () => {
+              cardState.innerHTML = html;
+              gsap.to(cardState, {
+                opacity: 1,
+                y: 0,
+                duration: 0.4,
+                ease: 'power2.out'
+              });
+            }
+          });
+        }
+      }
+    }
+  </script>
+</section>
+
+<style>
+  .descubre {
+    padding-block: var(--space-3xl) var(--space-2xl);
+  }
+
+  .descubre__grid-layout {
+    display: grid;
+    gap: var(--space-2xl);
+    align-items: start;
+  }
+
+  /* --- Intents (The Picker) --- */
+  .intents {
+    display: flex;
+    gap: var(--space-s);
+    margin-top: var(--space-xl);
+    
+    /* Mobile: Horizontal scroll for one-handed discovery */
+    overflow-x: auto;
+    padding-bottom: var(--space-s); /* Space for scrollbar */
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  .intents::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
+  }
+
+  .intent-btn {
+    flex: 0 0 auto; /* Prevent shrinking in horizontal scroll */
+    scroll-snap-align: start;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    min-height: 48px;
+    padding: 0.5em 1.25em;
+    border: var(--rule);
+    border-radius: var(--radius-pill);
+    background: var(--surface-page);
+    color: var(--text-primary);
+    font-family: var(--font-text);
+    font-size: var(--step-0);
+    transition: transform var(--t-micro) var(--ease-out), background var(--t-micro) var(--ease-out), border-color var(--t-micro) var(--ease-out);
+    cursor: pointer;
+  }
+
+  .intent-emoji {
+    font-size: 1.2em;
+  }
+
+  .intent-btn[aria-pressed='true'] {
+    background: var(--text-primary);
+    color: var(--surface-page);
+    border-color: var(--text-primary);
+    transform: scale(0.96);
+    box-shadow: inset 0 3px 6px rgba(0,0,0,0.2);
+  }
+
+  @media (hover: hover) {
+    .intent-btn:hover:not([aria-pressed='true']) {
+      background: var(--paper);
+      transform: translateY(-2px);
+    }
+  }
+
+  /* --- Result Column --- */
+  .descubre__result {
+    position: relative;
+    border-radius: var(--radius-card);
+    min-height: 540px;
+  }
+
+  .concierge-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: var(--rule-width) dashed var(--line);
+    border-radius: var(--radius-card);
+    text-align: center;
+    color: var(--text-tertiary);
+  }
+
+  /* The generated card styles */
+  :global(.concierge-card) {
+    display: flex;
+    flex-direction: column;
+    border: var(--rule);
+    border-radius: var(--radius-card);
+    background: var(--surface-page);
+    overflow: hidden;
+    box-shadow: var(--shadow-print);
+  }
+
+  :global(.concierge__hero) {
+    display: block;
+    text-decoration: none;
+    --campo-ratio: 2.2; /* Cinematic ratio for the top field */
+    border-bottom: var(--rule);
+    position: relative;
+    overflow: hidden;
+    will-change: transform;
+    transform: translateZ(0);
+  }
+
+  /* Support for an image if injected */
+  :global(.concierge__hero img), :global(.concierge__hero picture) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.9;
+    mix-blend-mode: multiply;
+  }
+
+  :global(.concierge__body) {
+    padding: var(--space-xl);
+    display: grid;
+    gap: var(--space-l);
+  }
+
+  :global(.concierge__title) {
+    font-size: var(--step-3);
+    line-height: var(--leading-card);
+    letter-spacing: var(--track-tight);
+    text-wrap: balance;
+  }
+
+  :global(.concierge__title strong) {
+    color: var(--text-accent);
+    font-weight: inherit;
+  }
+
+  :global(.concierge__why) {
+    font-size: var(--step-1);
+    color: var(--text-secondary);
+    max-width: 48ch;
+    text-wrap: pretty;
+  }
+
+  :global(.concierge__meta) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-m) var(--space-l);
+    padding-block: var(--space-m);
+    border-block: var(--rule);
+  }
+
+  :global(.meta-item) {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  :global(.meta-item .label) {
+    color: var(--text-tertiary);
+    font-family: var(--font-text);
+    font-size: var(--step--1);
+    text-transform: uppercase;
+    letter-spacing: var(--track-label);
+  }
+
+  :global(.meta-item .value) {
+    color: var(--text-primary);
+    text-transform: capitalize;
+  }
+
+  :global(.concierge__actions) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-m);
+    margin-top: var(--space-s);
+  }
+
+  :global(.concierge__status) {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--olive);
+    font-family: var(--font-text);
+    font-size: var(--step--1);
+    font-weight: var(--weight-label);
+    text-transform: uppercase;
+    letter-spacing: var(--track-label);
+  }
+
+  :global(.concierge__status::before) {
+    content: '';
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    /* optional: a little breathing pulse */
+    animation: pulse-dot 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  :global(.btn--editorial) {
+    min-height: 48px;
+    padding: 0.6em 1.5em;
+  }
+
+  @media (min-width: 900px) {
+    .descubre__grid-layout {
+      grid-template-columns: 1fr 1.2fr;
+    }
+    
+    .intents {
+      flex-wrap: wrap;
+      overflow-x: visible;
+      padding-bottom: 0;
+    }
+    
+    .descubre__prompt {
+      position: sticky;
+      top: var(--space-2xl);
+    }
+    
+    :global(.concierge__hero) {
+       --campo-ratio: 2.5;
+    }
+  }
+</style>

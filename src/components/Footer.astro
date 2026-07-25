@@ -1,0 +1,91 @@
+---
+const year = new Date().getFullYear();
+const base = import.meta.env.BASE_URL;
+---
+
+<footer class="footer">
+  <div class="container">
+    <p class="footer__voice voice" data-reveal>Nos vemos en la mesa.</p>
+
+    <div class="footer__grid">
+      <div>
+        <p class="label footer__heading">Lamucca Company</p>
+        <p class="footer__note">Your friendly neighborhood place.<br />Madrid, desde 2008.</p>
+      </div>
+      <div>
+        <p class="label footer__heading">Síguenos</p>
+        <ul class="footer__list">
+          <li><a href="https://www.instagram.com/lamucca" rel="noopener" target="_blank">Instagram · @lamucca</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="label footer__heading">Contacto</p>
+        <ul class="footer__list">
+          <li><a href="tel:+34915210000">91 521 00 00</a></li>
+          <li><a href={`${base}#descubre`}>Reservas</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="footer__legal">© {year} Lamucca Company · Madrid</p>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    background: var(--ink);
+    color: var(--paper);
+    padding-block: var(--space-2xl) var(--space-l);
+    margin-top: var(--space-3xl);
+  }
+
+  .footer__voice {
+    font-size: var(--step-4);
+    line-height: 1.05;
+    margin-bottom: var(--space-2xl);
+    max-width: 14ch;
+  }
+
+  .footer__grid {
+    display: grid;
+    gap: var(--space-l);
+    padding-block: var(--space-l);
+    border-top: var(--rule-width) solid var(--line-inverse);
+  }
+
+  .footer__heading {
+    color: rgb(244 238 227 / 0.6);
+    margin-bottom: var(--space-xs);
+  }
+
+  .footer__note {
+    font-size: var(--step-0);
+  }
+
+  .footer__list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: var(--space-2xs);
+  }
+
+  .footer__list a {
+    text-decoration: none;
+  }
+
+  .footer__list a:hover {
+    color: var(--butter);
+  }
+
+  .footer__legal {
+    margin-top: var(--space-xl);
+    font-size: var(--step--1);
+    color: rgb(244 238 227 / 0.55);
+  }
+
+  @media (min-width: 700px) {
+    .footer__grid {
+      grid-template-columns: 2fr 1fr 1fr;
+    }
+  }
+</style>

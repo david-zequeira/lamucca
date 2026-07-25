@@ -1,0 +1,262 @@
+---
+/**
+ * CHAPTER 05 — LA COMIDA
+ * Built on the brand's own verb chain (their OG copy: "¿Desayunar, Aperitivear,
+ * Comer, Tapear, Merendar, Cenar y Recenar en Madrid?"). The verb matching the
+ * current Madrid daypart lights up — the edition mechanic, applied to appetite.
+ *
+ * No prices are shown: none are verified. No invented dishes.
+ */
+
+const verbos = [
+  { verb: 'Desayunar', edition: 'manana', what: 'Pan de En Bruto y café de especialidad premiado.' },
+  { verb: 'Aperitivear', edition: 'aperitivo', what: 'Vermut con torreznos en la barra de Ultramarines.' },
+  { verb: 'Comer', edition: 'aperitivo', what: 'La pizza de boletus. La de siempre. La que no se cambia.' },
+  { verb: 'Tapear', edition: 'tarde', what: 'Nachos, casquería fina, lo que caiga en la barra.' },
+  { verb: 'Merendar', edition: 'tarde', what: 'Pastelería del obrador y kombucha orgánica.' },
+  { verb: 'Cenar', edition: 'noche', what: 'Steak tartare, arroces, parrilla orgánica, pad thai.' },
+  { verb: 'Recenar', edition: 'noche', what: 'Porque «cenas que acaban en baile» también es una carta.' },
+];
+
+const firmas = [
+  { name: 'Pizza de boletus', where: 'En todas las casas', icon: true },
+  { name: 'Steak tartare', where: 'Lamucca' },
+  { name: 'Arroces', where: 'La Pescadería' },
+  { name: 'Casquería fina', where: 'Ultramarines del Coso' },
+  { name: 'Parrilla orgánica', where: 'Organik ⚡ Parriya' },
+  { name: 'Pan «Pam!»', where: 'En Bruto' },
+];
+---
+
+<section class="comida" id="comida" aria-labelledby="comida-title">
+  <div class="container">
+    <header class="capitulo-head" data-reveal>
+      <p class="capitulo-num label">Capítulo 05 — La comida</p>
+      <h2 class="capitulo-title" id="comida-title">
+        Aquí no importa <em>la hora</em>
+      </h2>
+      <p class="capitulo-sub">
+        La cocina no cierra. Ni si eres grande o pequeño, vegano o carnívoro.
+        Pizza, solomillo y tataki en la misma página: nos dijeron que era una
+        locura y llevamos así desde 2008.
+      </p>
+    </header>
+  </div>
+
+  <!-- La cadena de verbos — their own words, made enormous -->
+  <ol class="verbos">
+    {verbos.map((v, i) => (
+      <li class="verbo" data-verb-edition={v.edition} data-reveal style={`--reveal-delay: ${(i % 4) * 60}ms`}>
+        <span class="verbo__word">{v.verb}</span>
+        <span class="verbo__what">{v.what}</span>
+      </li>
+    ))}
+  </ol>
+
+  <div class="container">
+    <!-- El manifiesto — HIGH LOW, in their own words -->
+    <div class="manifiesto" data-reveal>
+      <p class="manifiesto__high">
+        <span class="label manifiesto__side">High</span>
+        Alta calidad de producto, ambiente muy cuidado, excelentes localizaciones.
+      </p>
+      <p class="manifiesto__low">
+        <span class="label manifiesto__side manifiesto__side--accent">Low</span>
+        Precio justo, cero ceremonia y la mejor materia prima que encontremos.
+      </p>
+    </div>
+
+    <p class="manifiesto__claim" data-reveal style="--reveal-delay: 160ms">
+      Apostamos por<br /><em class="voice">lo auténtico.</em>
+    </p>
+
+    <!-- Las firmas -->
+    <div class="firmas" data-reveal>
+      <p class="label firmas__head">Lo que hay que probar</p>
+      <ul class="firmas__list">
+        {firmas.map((f) => (
+          <li class="firma">
+            <span class="firma__name">
+              {f.icon && <span class="firma__heart" aria-hidden="true">♥</span>}
+              {f.name}
+            </span>
+            <span class="firma__where label">{f.where}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+</section>
+
+<style>
+  .comida {
+    padding-block: var(--space-3xl) var(--space-2xl);
+  }
+
+  /* --- Los verbos --- */
+  .verbos {
+    list-style: none;
+    margin: 0 0 var(--space-2xl);
+    padding: 0;
+    border-top: var(--rule);
+  }
+
+  .verbo {
+    display: grid;
+    gap: var(--space-2xs);
+    padding: var(--space-m) var(--gutter);
+    border-bottom: var(--rule);
+    transition: background var(--t-micro) var(--ease-out);
+  }
+
+  .verbo__word {
+    font-family: var(--font-display);
+    font-size: var(--step-4);
+    font-weight: var(--weight-display);
+    line-height: 1;
+    letter-spacing: var(--track-title);
+    color: var(--text-primary);
+  }
+
+  .verbo__what {
+    font-size: var(--step-0);
+    color: var(--text-tertiary);
+    max-width: 46ch;
+  }
+
+  /* The verb belonging to the current Madrid daypart */
+  .verbo[data-verb-now='true'] {
+    background: var(--surface-raised);
+  }
+
+  .verbo[data-verb-now='true'] .verbo__word {
+    color: var(--text-accent);
+    font-style: italic;
+  }
+
+  .verbo[data-verb-now='true'] .verbo__what {
+    color: var(--text-secondary);
+  }
+
+  .verbo[data-verb-now='true'] .verbo__word::after {
+    content: ' — ahora';
+    font-family: var(--font-text);
+    font-style: normal;
+    font-size: var(--step--1);
+    font-weight: var(--weight-label);
+    letter-spacing: var(--track-label);
+    text-transform: uppercase;
+    vertical-align: middle;
+    margin-left: 0.6em;
+  }
+
+  /* --- El manifiesto --- */
+  .manifiesto {
+    display: grid;
+    gap: var(--space-l);
+    margin-block: var(--space-2xl) var(--space-xl);
+  }
+
+  .manifiesto__high,
+  .manifiesto__low {
+    display: grid;
+    gap: var(--space-xs);
+    font-size: var(--step-2);
+    line-height: 1.25;
+    max-width: 26ch;
+  }
+
+  .manifiesto__high {
+    font-family: var(--font-display);
+    font-weight: 480;
+  }
+
+  .manifiesto__low {
+    font-family: var(--font-text);
+    font-weight: var(--weight-semi);
+    justify-self: end;
+    text-align: right;
+  }
+
+  .manifiesto__side {
+    color: var(--text-tertiary);
+    font-size: var(--step-0);
+  }
+
+  .manifiesto__side--accent {
+    color: var(--text-accent);
+  }
+
+  .manifiesto__claim {
+    font-family: var(--font-display);
+    font-size: var(--step-5);
+    font-weight: var(--weight-display);
+    line-height: var(--leading-hero);
+    letter-spacing: var(--track-title);
+    text-align: center;
+    margin-bottom: var(--space-2xl);
+  }
+
+  .manifiesto__claim em {
+    color: var(--tomato);
+  }
+
+  /* --- Las firmas --- */
+  .firmas__head {
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-m);
+  }
+
+  .firmas__list {
+    display: grid;
+    gap: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: var(--rule);
+  }
+
+  .firma {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-xs);
+    padding-block: var(--space-s);
+    border-bottom: var(--hairline);
+  }
+
+  .firma__name {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 520;
+  }
+
+  .firma__heart {
+    color: var(--coral);
+    margin-right: 0.4em;
+  }
+
+  .firma__where {
+    color: var(--text-tertiary);
+  }
+
+  @media (min-width: 700px) {
+    .verbo {
+      grid-template-columns: 1fr 1fr;
+      align-items: baseline;
+      gap: var(--space-l);
+    }
+
+    .firmas__list {
+      grid-template-columns: repeat(2, 1fr);
+      column-gap: var(--space-2xl);
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .verbo__word {
+      font-size: var(--step-5);
+    }
+  }
+</style>

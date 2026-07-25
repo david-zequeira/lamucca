@@ -1,0 +1,45 @@
+{
+  "name": "Lamucca de Andes",
+  "slug": "lamucca-de-andes",
+  "concept": "lamucca",
+  "neighborhood": "Hortaleza · Campo de las Naciones",
+  "address": "Avenida de los Andes 25, 28043 Madrid",
+  "city": "Madrid",
+  "tagline": "La parrilla orgánica del norte",
+  "description": "Organik Parriya: producto ecológico y de proximidad en la primera casa del grupo fuera del centro. El espíritu Lamucca, con más cielo.",
+  "character": [
+    "Organik Parriya",
+    "Producto de proximidad",
+    "Fuera del centro"
+  ],
+  "phone": "915210000",
+  "bookingUrl": "https://www.covermanager.com/reservation/module_restaurant/restaurante-lamuccadeandes/spanish",
+  "openedYear": 2020,
+  "order": 7,
+  "accent": "olive",
+  "sources": [
+    "https://www.lamuccacompany.com/lamucca-de-andes/"
+  ],
+  "verified": true,
+  "moods": [
+    "tranquilo",
+    "luminoso"
+  ],
+  "occasions": [
+    "familia",
+    "trabajo"
+  ],
+  "zone": "norte",
+  "times": [
+    "comida",
+    "cena"
+  ],
+  "groups": [
+    "ninos",
+    "pocos",
+    "muchos"
+  ],
+  "features": [
+    "Parrilla orgánica"
+  ]
+}

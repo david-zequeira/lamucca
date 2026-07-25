@@ -1,0 +1,44 @@
+{
+  "name": "Ultramarines del Coso · Trafalgar",
+  "slug": "ultramarines-trafalgar",
+  "concept": "ultramarines",
+  "neighborhood": "Chamberí · Trafalgar",
+  "address": "Calle Trafalgar 1, Madrid",
+  "city": "Madrid",
+  "tagline": "Taberna castiza, casquería fina",
+  "description": "Taberna con alma de barrio y carácter castizo donde la casquería fina es la protagonista. Carta del chef ejecutivo Dani Álvarez Marthón e interiores de Nommad Studio. Cenas que acaban en baile.",
+  "character": [
+    "Casquería fina",
+    "Interiores Nommad Studio",
+    "Cenas que acaban en baile"
+  ],
+  "phone": "910689593",
+  "bookingUrl": "https://www.covermanager.com/reservation/module_restaurant/restaurante-ultramarinesdelcosotrafalgar/spanish",
+  "order": 13,
+  "accent": "tomato",
+  "sources": [
+    "https://www.lamuccacompany.com/ultramarines-del-coso-trafalgar/"
+  ],
+  "verified": true,
+  "moods": [
+    "castizo",
+    "animado"
+  ],
+  "occasions": [
+    "amigos",
+    "tardeo"
+  ],
+  "zone": "chamberi",
+  "times": [
+    "desayuno",
+    "tardeo",
+    "cena",
+    "tarde"
+  ],
+  "groups": [
+    "pocos"
+  ],
+  "features": [
+    "Casquería fina"
+  ]
+}

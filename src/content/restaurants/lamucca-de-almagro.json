@@ -1,0 +1,45 @@
+{
+  "name": "Lamucca de Almagro",
+  "slug": "lamucca-de-almagro",
+  "concept": "lamucca",
+  "neighborhood": "Chamberí · Almagro",
+  "address": "Calle Almagro 5, 28010 Madrid",
+  "city": "Madrid",
+  "tagline": "La antigua floristería",
+  "description": "En la antigua floristería Bourguignon: dos plantas de decoración industrial-vintage, barra de mármol de Macael y un reservado con chimenea. La mesa de Chamberí para comidas que se alargan.",
+  "character": [
+    "Antigua floristería Bourguignon",
+    "Mármol de Macael",
+    "Reservado con chimenea"
+  ],
+  "phone": "915210000",
+  "bookingUrl": "https://www.covermanager.com/reservation/module_restaurant/restaurante-lamuccadealmagro/spanish",
+  "openedYear": 2014,
+  "order": 3,
+  "accent": "olive",
+  "sources": [
+    "https://www.lamuccacompany.com/lamucca-de-almagro/"
+  ],
+  "verified": true,
+  "moods": [
+    "tranquilo"
+  ],
+  "occasions": [
+    "trabajo",
+    "celebracion",
+    "pareja"
+  ],
+  "zone": "chamberi",
+  "times": [
+    "comida",
+    "cena"
+  ],
+  "groups": [
+    "dos",
+    "pocos",
+    "muchos"
+  ],
+  "features": [
+    "Reservado con chimenea"
+  ]
+}

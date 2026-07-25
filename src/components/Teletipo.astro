@@ -1,0 +1,77 @@
+---
+/**
+ * El teletipo — the ticker. Street energy; doubles as a chapter divider.
+ * Decorative: aria-hidden, and it stops entirely under reduced-motion.
+ */
+interface Props {
+  items: string[];
+  inverse?: boolean;
+}
+const { items, inverse = false } = Astro.props;
+---
+
+<div class:list={['teletipo', { 'teletipo--inverse': inverse }]} aria-hidden="true">
+  <div class="teletipo__track">
+    {[0, 1].map(() => (
+      <span class="teletipo__group">
+        {items.map((t) => (
+          <span class="teletipo__item label">
+            {t}
+            <span class="teletipo__heart">♥</span>
+          </span>
+        ))}
+      </span>
+    ))}
+  </div>
+</div>
+
+<style>
+  .teletipo {
+    border-block: var(--rule);
+    padding-block: 0.9em;
+    overflow: hidden;
+  }
+
+  .teletipo--inverse {
+    border-color: var(--paper);
+    color: var(--paper);
+  }
+
+  .teletipo__track {
+    display: flex;
+    width: max-content;
+    animation: teletipo 34s linear infinite;
+    will-change: transform;
+  }
+
+  .teletipo__group {
+    display: flex;
+  }
+
+  .teletipo__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 1.4em;
+    padding-inline: 0.7em;
+    font-size: var(--step-0);
+    white-space: nowrap;
+  }
+
+  .teletipo__heart {
+    color: var(--coral);
+    font-size: 0.7em;
+  }
+
+  @keyframes teletipo {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .teletipo__track {
+      animation: none;
+      will-change: auto;
+    }
+  }
+</style>

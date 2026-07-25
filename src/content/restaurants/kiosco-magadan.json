@@ -1,0 +1,43 @@
+{
+  "name": "Kiosco Magadán",
+  "slug": "kiosco-magadan",
+  "concept": "kiosco",
+  "neighborhood": "Argüelles · Pintor Rosales",
+  "address": "Paseo del Pintor Rosales, Madrid",
+  "city": "Madrid",
+  "tagline": "Un kiosco de 1907, revivido",
+  "description": "El histórico kiosco de 1907 del Paseo del Pintor Rosales, recuperado con aire de terraza parisina: vermut, tortilla, horchata artesana y café de especialidad frente al Oeste.",
+  "character": [
+    "Kiosco histórico de 1907",
+    "Vermut y horchata",
+    "Terraza parisina"
+  ],
+  "order": 17,
+  "accent": "olive",
+  "sources": [
+    "https://www.lamuccacompany.com/grupo-lamucca-recupera-el-historico-quiosco-magadan/"
+  ],
+  "verified": true,
+  "moods": [
+    "luminoso",
+    "castizo"
+  ],
+  "occasions": [
+    "familia",
+    "tardeo",
+    "amigos"
+  ],
+  "zone": "oeste",
+  "times": [
+    "desayuno",
+    "tardeo"
+  ],
+  "groups": [
+    "ninos",
+    "dos",
+    "pocos"
+  ],
+  "features": [
+    "Terraza"
+  ]
+}

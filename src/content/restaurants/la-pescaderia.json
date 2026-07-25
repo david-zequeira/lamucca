@@ -1,0 +1,43 @@
+{
+  "name": "La Pescadería",
+  "slug": "la-pescaderia",
+  "concept": "pescaderia",
+  "neighborhood": "Malasaña · TriBall",
+  "address": "Calle de la Ballesta 32, Madrid",
+  "city": "Madrid",
+  "tagline": "Campo, mar, tierra y arroces",
+  "description": "En la vieja pescadería abandonada de Ballesta que le dio nombre. Una carta que mezcla lo tradicional con lo trendy: campo, mar, tierra y arroces, desde 2013.",
+  "character": [
+    "Arroces",
+    "Tradición + trendy",
+    "Ballesta 32"
+  ],
+  "phone": "915239051",
+  "bookingUrl": "https://www.covermanager.com/reservation/module_restaurant/restaurante-lapescaderia/spanish",
+  "openedYear": 2013,
+  "order": 10,
+  "accent": "olive",
+  "sources": [
+    "https://www.lamuccacompany.com/la-pescaderia/"
+  ],
+  "verified": true,
+  "moods": [
+    "animado"
+  ],
+  "occasions": [
+    "amigos",
+    "celebracion"
+  ],
+  "zone": "malasana",
+  "times": [
+    "comida",
+    "cena"
+  ],
+  "groups": [
+    "pocos",
+    "muchos"
+  ],
+  "features": [
+    "Arroces"
+  ]
+}

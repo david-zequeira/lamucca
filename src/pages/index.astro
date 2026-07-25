@@ -1,0 +1,61 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import Teletipo from '../components/Teletipo.astro';
+import Ch01Hero from '../components/home/Ch01Hero.astro';
+import Ch02Mundo from '../components/home/Ch02Mundo.astro';
+import Ch03Madrid from '../components/home/Ch03Madrid.astro';
+import Ch04Descubre from '../components/home/Ch04Descubre.astro';
+import Ch05Comida from '../components/home/Ch05Comida.astro';
+import Ch06Muckeros from '../components/home/Ch06Muckeros.astro';
+import Ch07Reserva from '../components/home/Ch07Reserva.astro';
+
+/* The seven chapters — see docs/strategy/information-architecture.md Part III.
+   Arrival → world → city → choice → food → people → invitation. */
+---
+
+<Base
+  title="Lamucca — Your friendly neighborhood place · Madrid"
+  description="Dieciocho casas por Madrid con la cocina abierta todo el día. Alta calidad de producto, ambiente cuidado y precio justo: High Low, desde 2008. Reserva tu mesa."
+>
+  <Nav />
+
+  <main id="main">
+    <Ch01Hero />
+
+    <Teletipo
+      items={[
+        'Madrid',
+        'Desde 2008',
+        'High Low',
+        'Pizza de boletus',
+        'Cocina abierta todo el día',
+        'Muckeros',
+        'Buen rollo',
+      ]}
+    />
+
+    <Ch02Mundo />
+    <Ch03Madrid />
+    <Ch04Descubre />
+    <Ch05Comida />
+
+    <Teletipo
+      items={[
+        'La Pescadería',
+        'Ultramarines del Coso',
+        'En Bruto',
+        'Club Fishermans',
+        'Makáá',
+        'Kiosco Magadán',
+        'Lamucca del Mar',
+      ]}
+    />
+
+    <Ch06Muckeros />
+    <Ch07Reserva />
+  </main>
+
+  <Footer />
+</Base>

@@ -1,0 +1,45 @@
+{
+  "name": "Makáá",
+  "slug": "makaa",
+  "concept": "makaa",
+  "neighborhood": "Centro · Hotel Thompson",
+  "address": "Rooftop Hotel Thompson Madrid, Plaza del Carmen, Madrid",
+  "city": "Madrid",
+  "tagline": "Brasas sobre Gran Vía",
+  "description": "El rooftop del Hotel Thompson: carta de brasas de Andy Boman y Dani Álvarez, chill-out con piscina y barra panorámica sobre los tejados del centro. Desde finales de 2025.",
+  "character": [
+    "Rooftop con piscina",
+    "Carta de brasas",
+    "Vistas panorámicas"
+  ],
+  "openedYear": 2025,
+  "order": 16,
+  "accent": "butter",
+  "sources": [
+    "https://restauracionnews.com/2025/12/grupo-lamucca-makaa-hotel-thompson/",
+    "https://www.esmadrid.com/en/nightlife/makaa"
+  ],
+  "verified": true,
+  "moods": [
+    "animado"
+  ],
+  "occasions": [
+    "pareja",
+    "amigos",
+    "celebracion"
+  ],
+  "zone": "centro",
+  "times": [
+    "tardeo",
+    "cena",
+    "tarde"
+  ],
+  "groups": [
+    "dos",
+    "pocos"
+  ],
+  "features": [
+    "Rooftop",
+    "Piscina"
+  ]
+}

@@ -1,0 +1,668 @@
+---
+/**
+ * LA MUCCA AI CONCIERGE (El Anfitrión)
+ * A conversational digital host that guides users to the right experience.
+ * Designed as a frictionless overlay with progressive intent understanding.
+ */
+import { getCollection } from 'astro:content';
+
+const venues = (await getCollection('restaurants')).sort((a, b) => a.data.order - b.data.order);
+
+// Pre-compute data for the mock AI
+const aiVenues = venues.map(v => ({
+  slug: v.data.slug,
+  name: v.data.name,
+  tagline: v.data.tagline,
+  neighborhood: v.data.neighborhood,
+  bookingUrl: v.data.bookingUrl,
+  moods: v.data.moods || [],
+  occasions: v.data.occasions || [],
+  times: v.data.times || [],
+  features: v.data.features || [],
+  accent: v.data.accent || 'tomato'
+}));
+---
+
+<!-- The Floating Action Button -->
+<button class="concierge-fab" id="concierge-trigger" aria-label="Hablar con El Anfitrión" aria-expanded="false">
+  <span class="fab-icon">✨</span>
+  <span class="fab-text">Tu Anfitrión</span>
+</button>
+
+<!-- The Concierge Overlay -->
+<div id="concierge-overlay" class="concierge-overlay" aria-hidden="true" hidden>
+  <div class="concierge-backdrop" id="concierge-backdrop"></div>
+  
+  <aside class="concierge-panel" role="dialog" aria-label="El Anfitrión">
+    <header class="concierge-header">
+      <div class="concierge-identity">
+        <h2 class="concierge-title">El Anfitrión</h2>
+        <p class="concierge-status">
+          <span class="status-dot"></span> En línea
+        </p>
+      </div>
+      <button class="btn-close" id="concierge-close" aria-label="Cerrar">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </header>
+
+    <div class="concierge-chat" id="concierge-chat" aria-live="polite">
+      <!-- Welcome Message -->
+      <div class="msg msg--ai">
+        <div class="msg-bubble">
+          Hola. Soy tu anfitrión digital. Conozco todas nuestras casas y sus mesas. ¿Qué plan tienes en mente para hoy?
+        </div>
+      </div>
+      <div class="msg-quick-replies" id="initial-replies">
+        <button class="quick-reply">Salgo con amigos</button>
+        <button class="quick-reply">Cena romántica</button>
+        <button class="quick-reply">¿Horarios?</button>
+      </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div class="concierge-typing" id="concierge-typing" hidden>
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    </div>
+
+    <form class="concierge-input-area" id="concierge-form">
+      <input 
+        type="text" 
+        id="concierge-input" 
+        placeholder="Escribe aquí tu plan..." 
+        autocomplete="off" 
+        required 
+      />
+      <button type="submit" class="btn-send" aria-label="Enviar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+        </svg>
+      </button>
+    </form>
+  </aside>
+
+  <script is:inline define:vars={{ aiVenues }}>
+    window.lamuccaAIVenues = aiVenues;
+  </script>
+</div>
+
+<style>
+  @keyframes fab-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  /* --- FAB --- */
+  .concierge-fab {
+    position: fixed;
+    bottom: var(--space-l);
+    right: var(--space-l);
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: 0.8rem 1.2rem;
+    border: var(--rule-width) solid var(--ink);
+    border-radius: var(--radius-pill);
+    background: var(--text-primary);
+    color: var(--surface-page);
+    font-family: var(--font-text);
+    font-size: var(--step-0);
+    box-shadow: var(--shadow-print);
+    cursor: pointer;
+    transition: transform var(--t-micro) var(--ease-out), box-shadow var(--t-micro) var(--ease-out);
+    animation: fab-float 4s ease-in-out infinite;
+  }
+
+  .concierge-fab:hover {
+    animation-play-state: paused;
+    transform: translateY(-4px);
+    box-shadow: 0 16px 0 -6px var(--ink);
+  }
+
+  .fab-icon {
+    font-size: 1.2em;
+  }
+
+  @media (max-width: 899px) {
+    .concierge-fab {
+      bottom: calc(var(--space-l) + 60px); /* Avoid overlapping with mobile bottom bar */
+    }
+  }
+
+  /* --- Overlay & Panel --- */
+  .concierge-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .concierge-overlay[hidden] {
+    display: none !important;
+  }
+
+  .concierge-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(26, 26, 26, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .concierge-panel {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    height: 100%;
+    background: color-mix(in srgb, var(--surface-page) 85%, transparent);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-left: var(--rule);
+    display: flex;
+    flex-direction: column;
+    /* Removed soft shadow to respect "A DOS TINTAS" design system */
+  }
+
+  @media (max-width: 700px) {
+    .concierge-panel {
+      max-width: 100%;
+      border-left: none;
+    }
+  }
+
+  /* --- Header --- */
+  .concierge-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-m) var(--space-l);
+    border-bottom: var(--rule);
+    background: color-mix(in srgb, var(--surface-page) 95%, transparent);
+  }
+
+  .concierge-title {
+    font-family: var(--font-display);
+    font-size: var(--step-2);
+    font-weight: var(--weight-display);
+    line-height: 1;
+  }
+
+  .concierge-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    font-size: var(--step--1);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: var(--track-label);
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--olive);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  .btn-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-primary);
+    padding: 8px;
+    margin: -8px;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform var(--t-micro) var(--ease-out);
+    position: relative;
+    z-index: 10;
+  }
+
+  .btn-close:hover {
+    transform: rotate(90deg);
+  }
+
+  /* --- Chat Area --- */
+  .concierge-chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-l);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-m);
+    scroll-behavior: smooth;
+  }
+
+  .msg {
+    display: flex;
+    flex-direction: column;
+    max-width: 85%;
+    animation: fade-in-up 0.4s var(--ease-out) both;
+  }
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .msg--ai {
+    align-self: flex-start;
+  }
+
+  .msg--user {
+    align-self: flex-end;
+  }
+
+  .msg-bubble {
+    padding: 1rem 1.25rem;
+    border-radius: 1.25rem;
+    font-size: var(--step-0);
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  .msg--ai .msg-bubble {
+    background: var(--paper);
+    color: var(--text-primary);
+    border-bottom-left-radius: 0.25rem;
+  }
+
+  .msg--user .msg-bubble {
+    background: var(--text-accent);
+    color: var(--surface-page);
+    border-bottom-right-radius: 0.25rem;
+  }
+
+  /* Rich Card inside Chat */
+  .msg-card {
+    margin-top: 8px;
+    border: var(--rule);
+    border-radius: var(--radius-card);
+    background: var(--surface-page);
+    overflow: hidden;
+    width: 100%;
+    min-width: 280px;
+  }
+
+  .msg-card__body {
+    padding: var(--space-m);
+  }
+
+  .msg-card__title {
+    font-size: var(--step-1);
+    font-weight: 600;
+  }
+
+  .msg-card__meta {
+    font-size: var(--step--1);
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  .msg-card__actions {
+    display: flex;
+    gap: 8px;
+    padding: var(--space-m);
+    padding-top: 0;
+  }
+
+  .msg-card .btn {
+    flex: 1;
+    text-align: center;
+    padding: 0.6em;
+    min-height: 40px;
+  }
+
+  /* Quick Replies */
+  .msg-quick-replies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .quick-reply {
+    background: transparent;
+    border: var(--rule-width) solid var(--text-primary);
+    color: var(--text-primary);
+    padding: 0.4em 1em;
+    min-height: 44px; /* Tap target */
+    border-radius: var(--radius-pill);
+    font-family: var(--font-text);
+    font-size: var(--step--1);
+    cursor: pointer;
+    transition: all var(--t-micro) var(--ease-out);
+  }
+
+  .quick-reply:hover {
+    background: var(--text-primary);
+    color: var(--surface-page);
+  }
+
+  /* Typing Indicator */
+  .concierge-typing {
+    padding: 0 var(--space-l) var(--space-m);
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .concierge-typing .dot {
+    width: 6px;
+    height: 6px;
+    background: var(--text-tertiary);
+    border-radius: 50%;
+    animation: typing 1.4s infinite both;
+  }
+
+  .concierge-typing .dot:nth-child(1) { animation-delay: 0s; }
+  .concierge-typing .dot:nth-child(2) { animation-delay: 0.2s; }
+  .concierge-typing .dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typing {
+    0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  /* --- Input Area --- */
+  .concierge-input-area {
+    display: flex;
+    gap: var(--space-s);
+    padding: var(--space-m) var(--space-l);
+    background: color-mix(in srgb, var(--surface-page) 95%, transparent);
+    border-top: var(--rule);
+  }
+
+  #concierge-input {
+    flex: 1;
+    background: var(--surface-page);
+    border: var(--rule);
+    border-radius: var(--radius-pill);
+    padding: 0.8rem 1.25rem;
+    font-family: var(--font-text);
+    font-size: var(--step-0);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color var(--t-micro) var(--ease-out);
+  }
+
+  #concierge-input:focus {
+    border-color: var(--text-accent);
+  }
+
+  .btn-send {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border: none;
+    border-radius: 50%;
+    background: var(--text-primary);
+    color: var(--surface-page);
+    cursor: pointer;
+    transition: transform var(--t-micro) var(--ease-out);
+  }
+
+  .btn-send:hover {
+    transform: scale(1.05);
+  }
+</style>
+
+<script>
+  import gsap from 'gsap';
+
+  class ConciergeBrain {
+    constructor() {
+      this.state = 'idle';
+      this.memory = {};
+    }
+
+    async process(message) {
+      const msg = message.toLowerCase();
+      // Artificial delay to feel natural (network + typing simulation)
+      await new Promise(r => setTimeout(r, 600 + Math.random() * 800));
+
+      const venues = window.lamuccaAIVenues || [];
+
+      // 1. Group Size / Friends Intent
+      if (msg.includes('amig') || msg.includes('grupo') || msg.match(/\b(5|6|7|8|cinco|seis|siete|ocho)\b/)) {
+        this.state = 'awaiting_mood';
+        this.memory.occasion = 'amigos';
+        return {
+          text: "¡Qué buen plan! Para ir con amigos, ¿os apetece algo animado y con música, o un sitio más tranquilo donde podáis hablar bien?",
+          replies: ["Algo animado 🎸", "Más tranquilo 🍷"]
+        };
+      }
+
+      // 2. Mood processing (Lively)
+      if (this.state === 'awaiting_mood' && (msg.includes('animad') || msg.includes('musica') || msg.includes('🎸'))) {
+        this.state = 'idle';
+        const matches = venues.filter(v => v.moods.includes('animado') && v.occasions.includes('amigos'));
+        const pick = matches[0] || venues[0]; // Fallback to first if none
+        return {
+          text: `Perfecto. Si queréis buen ambiente y que la noche se alargue, os recomiendo **${pick.name}**. ¿Queréis que os mire mesa?`,
+          card: pick,
+          replies: ["Reservar mesa", "Ver otro local"]
+        };
+      }
+
+      // 3. Date Night
+      if (msg.includes('parej') || msg.includes('cita') || msg.includes('novi')) {
+        const matches = venues.filter(v => v.occasions.includes('pareja'));
+        const pick = matches[Math.floor(Math.random() * matches.length)];
+        return {
+          text: "Para una cita buscamos siempre cuidar la atmósfera: luces bajas, buen servicio y tranquilidad. Te sugiero esta casa:",
+          card: pick,
+          replies: ["Ver la carta", "Reservar"]
+        };
+      }
+
+      // 4. Operational queries (Hours)
+      if (msg.includes('horario') || msg.includes('hora ') || msg.includes('abierto')) {
+        return {
+          text: "El concepto *High Low* significa que nuestras cocinas no cierran. Estamos abiertos todo el día de forma ininterrumpida. Puedes venir a comer a las 5 de la tarde o cenar tarde. ¿Para qué casa buscabas mesa?",
+          replies: ["Lamucca de Pez", "La Pescadería", "En Bruto"]
+        };
+      }
+
+      // 5. Connecting to booking (The future CRM/Booking hook)
+      if (msg.includes('reservar') || msg.includes('mesa')) {
+        return {
+          text: "¡Claro! En futuras versiones, me conectaré directamente a nuestro sistema CoverManager y a tu perfil de cliente para buscarte la mesa en 1 segundo. Por ahora, si tienes un local en mente te paso el enlace directo."
+        };
+      }
+
+      // Default Fallback
+      return {
+        text: "Te entiendo. Para poder recomendarte mejor, ¿qué ambiente te apetece hoy o por qué zona de Madrid estás buscando?",
+        replies: ["Por Malasaña", "Cerca del Centro", "Barrio Salamanca"]
+      };
+    }
+  }
+
+  // Keep brain instance outside so memory persists across page navigations
+  const brain = new ConciergeBrain();
+
+  function initConcierge() {
+    const overlay = document.getElementById('concierge-overlay');
+    // Prevent multiple initializations
+    if (!overlay || overlay.dataset.init) return;
+    overlay.dataset.init = 'true';
+
+    const trigger = document.getElementById('concierge-trigger');
+    const backdrop = document.getElementById('concierge-backdrop');
+    const panel = document.querySelector('.concierge-panel');
+    const closeBtn = document.getElementById('concierge-close');
+    const chatBox = document.getElementById('concierge-chat');
+    const form = document.getElementById('concierge-form');
+    const input = document.getElementById('concierge-input');
+    const typingIndicator = document.getElementById('concierge-typing');
+
+    let isOpen = false;
+
+    function openConcierge() {
+      if (isOpen) return;
+      isOpen = true;
+      overlay.hidden = false;
+      overlay.setAttribute('aria-hidden', 'false');
+      trigger.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden'; // prevent bg scrolling
+
+      gsap.fromTo(backdrop, { opacity: 0 }, { opacity: 1, duration: 0.4 });
+      
+      const isMobile = window.innerWidth <= 700;
+      gsap.fromTo(panel, 
+        { x: isMobile ? 0 : '100%', y: isMobile ? '100%' : 0 }, 
+        { x: 0, y: 0, duration: 0.6, ease: 'expo.out' }
+      );
+      
+      setTimeout(() => input.focus(), 600);
+    }
+
+    function closeConcierge() {
+      if (!isOpen) return;
+      isOpen = false;
+      
+      // 1. Move focus FIRST before hiding to prevent ARIA errors
+      trigger.focus();
+      
+      // 2. Update ARIA states
+      trigger.setAttribute('aria-expanded', 'false');
+      overlay.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+
+      // 3. Animate out
+      const isMobile = window.innerWidth <= 700;
+      gsap.to(backdrop, { opacity: 0, duration: 0.4 });
+      gsap.to(panel, { 
+        x: isMobile ? 0 : '100%', 
+        y: isMobile ? '100%' : 0, 
+        duration: 0.5, 
+        ease: 'power3.in',
+        onComplete: () => {
+          overlay.hidden = true;
+        }
+      });
+    }
+
+    // Bind events directly (no cloning needed since dataset.init protects us)
+    trigger.addEventListener('click', openConcierge);
+    closeBtn.addEventListener('click', closeConcierge);
+    backdrop.addEventListener('click', closeConcierge);
+
+    // --- UI Renderers ---
+    function appendUserMessage(text) {
+      const html = `
+        <div class="msg msg--user">
+          <div class="msg-bubble">${text}</div>
+        </div>
+      `;
+      chatBox.insertAdjacentHTML('beforeend', html);
+      scrollToBottom();
+    }
+
+    function appendAIMessage(response) {
+      const formattedText = response.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      
+      let html = `
+        <div class="msg msg--ai">
+          <div class="msg-bubble">${formattedText}</div>
+        </div>
+      `;
+
+      if (response.card) {
+        const v = response.card;
+        html += `
+          <div class="msg msg--ai">
+            <div class="msg-card">
+              <div class="msg-card__body">
+                <div class="msg-card__title">${v.name}</div>
+                <div class="msg-card__meta">${v.neighborhood} · ${v.tagline}</div>
+              </div>
+              <div class="msg-card__actions">
+                ${v.bookingUrl 
+                  ? `<a href="${v.bookingUrl}" target="_blank" class="btn btn--stamp">Reservar</a>`
+                  : ''}
+                <a href="${import.meta.env.BASE_URL}restaurantes/${v.slug}/" class="btn">Ver casa</a>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      if (response.replies) {
+        html += `<div class="msg-quick-replies">`;
+        response.replies.forEach(reply => {
+          html += `<button class="quick-reply">${reply}</button>`;
+        });
+        html += `</div>`;
+      }
+
+      chatBox.insertAdjacentHTML('beforeend', html);
+      attachQuickReplies();
+      scrollToBottom();
+    }
+
+    function scrollToBottom() {
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function attachQuickReplies() {
+      const replies = chatBox.querySelectorAll('.quick-reply:not(.bound)');
+      replies.forEach(btn => {
+        btn.classList.add('bound');
+        btn.addEventListener('click', () => {
+          btn.parentElement.remove();
+          handleSend(btn.textContent);
+        });
+      });
+    }
+
+    attachQuickReplies();
+
+    async function handleSend(text) {
+      if (!text.trim()) return;
+      
+      appendUserMessage(text);
+      input.value = '';
+      
+      const oldReplies = chatBox.querySelectorAll('.msg-quick-replies');
+      oldReplies.forEach(el => el.remove());
+
+      typingIndicator.hidden = false;
+      scrollToBottom();
+
+      const response = await brain.process(text);
+
+      typingIndicator.hidden = true;
+      appendAIMessage(response);
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      handleSend(input.value);
+    });
+  }
+
+  // Initialize on first load and after every Astro View Transition
+  document.addEventListener('astro:page-load', initConcierge);
+  
+  // Also run immediately in case astro:page-load already fired
+  initConcierge();
+</script>

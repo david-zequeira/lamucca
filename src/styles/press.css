@@ -1,0 +1,219 @@
+/* ===========================================================================
+   Lamucca — Press artifacts
+   The shared component vocabulary of «A DOS TINTAS».
+   See docs/strategy/design-system.md §6.
+   =========================================================================== */
+
+/* --- El campo — the media field ------------------------------------------
+   A photo slot. Until commissioned photography lands it renders as a two-ink
+   halftone field: honest printed texture, never a fake photograph.
+   When an <img> is slotted in, it inherits the duotone filter and the dots
+   become the print screen over it.
+   -------------------------------------------------------------------------- */
+
+.campo {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  aspect-ratio: var(--campo-ratio, var(--ratio-cover));
+  background: var(--campo-ink, var(--tomato));
+}
+
+.campo > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: var(--img-duotone-filter);
+  mix-blend-mode: var(--img-blend);
+  transition: var(--img-transition);
+}
+
+/* Halftone screen — highlight pass */
+.campo::before {
+  content: '';
+  position: absolute;
+  inset: -8%;
+  background-image: radial-gradient(circle, var(--paper) 1.7px, transparent 1.8px);
+  background-size: 13px 13px;
+  opacity: 0.3;
+  -webkit-mask-image: radial-gradient(115% 85% at 22% 8%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(115% 85% at 22% 8%, #000 0%, transparent 72%);
+  pointer-events: none;
+}
+
+/* Halftone screen — shadow pass */
+.campo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--ink) 1px, transparent 1.3px);
+  background-size: 7px 7px;
+  opacity: 0.24;
+  -webkit-mask-image: radial-gradient(100% 100% at 82% 96%, #000 0%, transparent 68%);
+  mask-image: radial-gradient(100% 100% at 82% 96%, #000 0%, transparent 68%);
+  pointer-events: none;
+}
+
+.campo--butter { --campo-ink: var(--butter); }
+.campo--olive { --campo-ink: var(--olive); }
+.campo--tomato { --campo-ink: var(--tomato); }
+.campo--ink { --campo-ink: var(--ink); }
+
+/* Content sitting on top of the field (numbers, years, captions) */
+.campo__meta {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: var(--space-s);
+  color: var(--paper);
+}
+
+.campo--butter .campo__meta {
+  color: var(--on-butter);
+}
+
+/* --- El sello ya vive en base.css (.btn--stamp) --------------------------- */
+
+/* --- La etiqueta — tags --------------------------------------------------- */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  border: var(--rule);
+  border-radius: var(--radius-pill);
+  padding: 0.45em 0.9em;
+  font-family: var(--font-text);
+  font-size: var(--step--1);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-primary);
+  background: transparent;
+  white-space: nowrap;
+}
+
+/* --- La cita — pull quote ------------------------------------------------- */
+
+.cita {
+  border-left: 3px solid var(--text-accent);
+  padding-left: var(--space-m);
+  margin: 0;
+}
+
+.cita p {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 420;
+  font-size: var(--step-3);
+  line-height: var(--leading-quote);
+  color: var(--text-primary);
+  max-width: 22ch;
+}
+
+.cita cite {
+  display: block;
+  margin-top: var(--space-xs);
+  font-family: var(--font-text);
+  font-size: var(--step--1);
+  font-weight: var(--weight-label);
+  font-style: normal;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+/* --- El clasificado — the classified ad ----------------------------------- */
+
+.clasificado {
+  border: var(--rule-width) dashed var(--surface-border);
+  border-radius: var(--radius-field);
+  padding: var(--space-m);
+  max-width: 34rem;
+}
+
+.clasificado__head {
+  color: var(--text-accent);
+  margin-bottom: var(--space-2xs);
+}
+
+.clasificado p {
+  font-size: var(--step-0);
+  color: var(--text-secondary);
+  max-width: none;
+}
+
+/* --- Marcas de registro — registration marks ------------------------------ */
+
+.marcas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: var(--line);
+}
+
+.marcas::before,
+.marcas::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: var(--rule-width) solid currentColor;
+}
+
+.marcas::before {
+  top: 0;
+  left: 0;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.marcas::after {
+  bottom: 0;
+  right: 0;
+  border-left: 0;
+  border-top: 0;
+}
+
+/* --- Section head — shared chapter header --------------------------------- */
+
+.capitulo-head {
+  margin-bottom: var(--space-2xl);
+}
+
+.capitulo-num {
+  color: var(--text-accent);
+  margin-bottom: var(--space-s);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.capitulo-num::after {
+  content: '';
+  flex: 1;
+  height: var(--rule-width);
+  background: var(--line);
+  max-width: 8rem;
+}
+
+.capitulo-title {
+  font-size: var(--step-4);
+  max-width: var(--measure-title);
+  color: var(--text-primary);
+}
+
+.capitulo-title em {
+  color: var(--text-accent);
+  font-style: italic;
+}
+
+.capitulo-sub {
+  margin-top: var(--space-m);
+  font-size: var(--step-0);
+  color: var(--text-secondary);
+  max-width: 48ch;
+}

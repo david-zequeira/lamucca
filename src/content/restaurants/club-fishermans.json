@@ -1,0 +1,39 @@
+{
+  "name": "Club Fishermans",
+  "slug": "club-fishermans",
+  "concept": "club",
+  "neighborhood": "Malasaña · TriBall",
+  "address": "Calle de la Ballesta 32, Madrid",
+  "city": "Madrid",
+  "tagline": "El club con contraseña",
+  "description": "Club de socios y fiestas privadas junto a La Pescadería, para unas sesenta personas y con contraseñas de acceso. La noche más secreta del grupo, desde 2016.",
+  "character": [
+    "Club de socios",
+    "Fiestas privadas",
+    "~60 personas"
+  ],
+  "openedYear": 2016,
+  "order": 15,
+  "accent": "tomato",
+  "sources": [
+    "https://www.lamuccacompany.com/club-fishermans/"
+  ],
+  "verified": true,
+  "moods": [
+    "secreto"
+  ],
+  "occasions": [
+    "celebracion",
+    "amigos"
+  ],
+  "zone": "malasana",
+  "times": [
+    "tarde"
+  ],
+  "groups": [
+    "muchos"
+  ],
+  "features": [
+    "Fiestas privadas"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "name": "Ultramarines del Coso · San Joaquín",
+  "slug": "ultramarines-san-joaquin",
+  "concept": "ultramarines",
+  "neighborhood": "Malasaña",
+  "address": "Calle San Joaquín 16, Madrid",
+  "city": "Madrid",
+  "tagline": "Tasca del siglo XXI",
+  "description": "Un tres en uno: bodeguita, barra de degustación y restaurante con alma de tasca del siglo XXI, con el chef nórdico Andy Boman «El Flaco» al frente.",
+  "character": [
+    "Bodeguita + barra + tasca",
+    "Andy Boman «El Flaco»"
+  ],
+  "phone": "910689593",
+  "bookingUrl": "https://www.covermanager.com/reservation/module_restaurant/restaurante-ultramarines-delcoso/spanish",
+  "openedYear": 2024,
+  "order": 12,
+  "accent": "tomato",
+  "sources": [
+    "https://www.lamuccacompany.com/ultramarines-del-coso-san-joaquin/"
+  ],
+  "verified": true,
+  "moods": [
+    "castizo"
+  ],
+  "occasions": [
+    "amigos",
+    "pareja",
+    "tardeo"
+  ],
+  "zone": "malasana",
+  "times": [
+    "tardeo",
+    "cena"
+  ],
+  "groups": [
+    "dos",
+    "pocos"
+  ],
+  "features": [
+    "Barra de degustación"
+  ]
+}

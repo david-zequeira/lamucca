@@ -1,0 +1,260 @@
+---
+/**
+ * CHAPTER 01 — LA PUERTA
+ * The arrival. Identity and promise in five seconds; routes the two big intents.
+ * Communicates: Lamucca · Madrid · comida · energía · humanidad.
+ */
+---
+
+<section class="hero" id="portada" aria-labelledby="hero-title" data-ink>
+  <!-- Cinematic Full-Bleed Background -->
+  <div class="hero__bg">
+    <video 
+      class="hero__video"
+      autoplay 
+      muted 
+      loop 
+      playsinline 
+      fetchpriority="high"
+      disableRemotePlayback
+      aria-hidden="true"
+    >
+      <source src={`${import.meta.env.BASE_URL}assets/hero-runway.mp4`} type="video/mp4" />
+    </video>
+    <div class="hero__overlay"></div>
+    <span class="marcas" aria-hidden="true"></span>
+  </div>
+
+  <div class="container hero__content">
+    <div class="hero__text">
+      <!-- WOW 1 «La tirada» -->
+      <p class="cabecera label">
+        <span class="cabecera__rule" aria-hidden="true" data-print="rule"></span>
+        <span data-print="rise" style="--print-delay: 120ms">
+          Grupo de restaurantes · Madrid · desde 2008
+        </span>
+      </p>
+
+      <h1 class="hero__title" id="hero-title">
+        <span class="hero__line" data-print="line" style="--print-delay: 220ms">
+          High en producto,
+        </span>&#32;
+        <span class="hero__line" data-print="line" style="--print-delay: 380ms">
+          <em class="voice">low</em> en pretensión.
+        </span>
+      </h1>
+
+      <p class="hero__lead" data-print="rise" style="--print-delay: 620ms">
+        Dieciocho casas por Madrid con la cocina abierta todo el día, mesas que se
+        alargan y música que no baja.&#32;
+        <em class="voice">Your friendly neighborhood place.</em>
+      </p>
+
+      <div class="hero__actions">
+        <a href="#reserva" class="btn btn--stamp" data-print="sello" style="--print-delay: 900ms">
+          Reservar mesa
+        </a>
+        <a href="#descubre" class="btn btn--outline" data-print="rise" style="--print-delay: 980ms">
+          ¿Cuál te toca hoy?
+        </a>
+      </div>
+
+      <div class="hero__footer" data-print="rise" style="--print-delay: 1100ms">
+        <p class="hero__edicion label" data-edition-line>
+          Cocina abierta todo el día
+        </p>
+        <p class="hero__caption label">
+          Lamucca de Pez · Malasaña · la primera casa, 2008
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    padding-block: calc(var(--nav-height-lg) + var(--space-xl)) var(--space-2xl);
+    overflow: hidden;
+  }
+
+  /* --- Cinematic Background --- */
+  .hero__bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: var(--ink);
+  }
+
+  .hero__video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    animation: cinematic-fade-in 2s var(--ease-out) forwards;
+    animation-delay: 400ms;
+  }
+
+  .hero__overlay {
+    position: absolute;
+    inset: 0;
+    /* Left + bottom wash so copy stays readable over busy footage */
+    background:
+      linear-gradient(
+        to right,
+        rgba(32, 27, 22, 0.72) 0%,
+        rgba(32, 27, 22, 0.35) 42%,
+        rgba(32, 27, 22, 0.08) 68%,
+        transparent 100%
+      ),
+      linear-gradient(
+        to bottom,
+        rgba(32, 27, 22, 0.2) 0%,
+        rgba(32, 27, 22, 0.12) 38%,
+        rgba(32, 27, 22, 0.72) 100%
+      );
+  }
+
+  @keyframes cinematic-fade-in {
+    from { opacity: 0; transform: scale(1.05); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* --- Content --- */
+  .hero__content {
+    position: relative;
+    z-index: 1;
+    /* width lo marca .container — no forzar 100% o se come el gutter */
+  }
+
+  .hero__text {
+    max-width: 40rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cabecera {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    color: var(--text-accent);
+    margin: 0 0 var(--space-m);
+    font-size: var(--step--1);
+  }
+
+  .cabecera__rule {
+    width: 1.5rem;
+    height: var(--rule-width);
+    background: currentColor;
+    flex: none;
+  }
+
+  .hero__title {
+    font-size: clamp(1.875rem, 4.2vw, 2.75rem);
+    line-height: 1.08;
+    letter-spacing: var(--track-display);
+    color: var(--text-primary);
+    margin: 0;
+    max-width: 18ch;
+    text-wrap: balance;
+  }
+
+  .hero__line {
+    display: block;
+  }
+
+  .hero__line em {
+    color: var(--text-accent);
+  }
+
+  .hero__lead {
+    margin: var(--space-m) 0 0;
+    font-size: var(--step-0);
+    line-height: 1.55;
+    color: var(--text-secondary);
+    max-width: 36ch;
+    text-wrap: pretty;
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-s);
+    margin: var(--space-l) 0 0;
+  }
+
+  .hero__actions .btn {
+    font-size: var(--step--1);
+    min-height: 48px;
+    padding: 0.75em 1.5em;
+  }
+
+  .btn--outline {
+    border-color: color-mix(in srgb, var(--paper) 72%, transparent);
+    color: var(--paper);
+    background: transparent;
+  }
+
+  .btn--outline:hover {
+    border-color: var(--paper);
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .hero__footer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2xs);
+    margin: var(--space-xl) 0 0;
+    padding: var(--space-s) 0 0;
+    border-top: 1px solid color-mix(in srgb, var(--paper) 18%, transparent);
+    width: 100%;
+    max-width: 36rem;
+  }
+
+  .hero__edicion,
+  .hero__caption {
+    color: var(--text-tertiary);
+    font-size: var(--step--1);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  @media (max-width: 899px) {
+    .hero {
+      padding-block: calc(var(--nav-height) + var(--space-l)) var(--space-xl);
+      align-items: flex-end;
+    }
+
+    .hero__title {
+      max-width: 14ch;
+    }
+
+    .hero__lead {
+      max-width: 34ch;
+    }
+
+    .hero__actions {
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%;
+    }
+
+    .hero__actions .btn {
+      width: 100%;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .hero__title {
+      font-size: clamp(2.25rem, 3.6vw, 3rem);
+      line-height: 1.06;
+    }
+  }
+</style>

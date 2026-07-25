@@ -1,0 +1,286 @@
+/* ===========================================================================
+   Lamucca — Motion system «La imprenta»
+   The press, not the cursor. See docs/strategy/motion-system.md
+
+   Layers:  load · entrance · progress · transition · micro
+   Engine:  CSS keyframes, CSS scroll-driven animations, View Transitions, WAAPI.
+            Zero libraries. Zero JS bundles.
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   1. ENTRANCE — trigger-once reveals (ink does not un-dry)
+   Inert until JS adds .is-ready, so no-JS users lose nothing.
+   --------------------------------------------------------------------------- */
+
+.is-ready [data-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity var(--t-reveal) var(--ease-out),
+    transform var(--t-reveal) var(--ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.is-ready [data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Display typography wipes up from behind a mask — a print reveal, not a fade */
+.is-ready [data-reveal='line'] {
+  opacity: 1;
+  transform: none;
+  clip-path: inset(0 0 105% 0);
+  transition: clip-path 900ms var(--ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.is-ready [data-reveal='line'].is-in {
+  clip-path: inset(0 0 -20% 0);
+}
+
+/* Stamps land */
+.is-ready [data-reveal='stamp'] {
+  opacity: 0;
+  transform: scale(1.04);
+  transition:
+    opacity var(--t-stamp) var(--ease-out),
+    transform var(--t-stamp) var(--ease-snap);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.is-ready [data-reveal='stamp'].is-in {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Rules draw */
+.is-ready [data-reveal='rule'] {
+  opacity: 1;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 600ms var(--ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.is-ready [data-reveal='rule'].is-in {
+  transform: scaleX(1);
+}
+
+/* Media fields ink up */
+.is-ready [data-reveal='field'] {
+  opacity: 0;
+  transform: scale(0.985);
+  transition:
+    opacity var(--t-enter) var(--ease-out),
+    transform 640ms var(--ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.is-ready [data-reveal='field'].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------------------------------------------------------------------------
+   2. LOAD — WOW 1 «La tirada», the press run.
+   Pure CSS: runs even if JS never executes. Only load animation on the site.
+   --------------------------------------------------------------------------- */
+
+@keyframes tirada-rule {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes tirada-line {
+  from { clip-path: inset(0 0 105% 0); transform: translateY(0.14em); }
+  to { clip-path: inset(0 0 -20% 0); transform: translateY(0); }
+}
+
+@keyframes tirada-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes tirada-sello {
+  from { opacity: 0; transform: scale(1.08); rotate: 0deg; }
+  60% { opacity: 1; }
+  to { opacity: 1; transform: scale(1); rotate: var(--stamp-rotation); }
+}
+
+/* The halftone dots ink up: the screen scales in behind the field */
+@keyframes tirada-campo {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes tirada-trama {
+  from { opacity: 0; background-size: 26px 26px; }
+  to { opacity: var(--trama-opacity); background-size: var(--trama-size); }
+}
+
+/* Load animations handled by GSAP (WOW 1) */
+
+.tirada [data-print='campo']::before {
+  --trama-opacity: 0.3;
+  --trama-size: 13px 13px;
+  animation: tirada-trama 1400ms var(--ease-out) both;
+  animation-delay: calc(var(--print-delay, 0ms) + 160ms);
+}
+
+.tirada [data-print='campo']::after {
+  --trama-opacity: 0.24;
+  --trama-size: 7px 7px;
+  animation: tirada-trama 1600ms var(--ease-out) both;
+  animation-delay: calc(var(--print-delay, 0ms) + 260ms);
+}
+
+/* ---------------------------------------------------------------------------
+   3. PROGRESS — scroll-driven. Compositor-side, no JS, no rAF loop.
+   Everything gated by @supports so unsupported browsers get the final state.
+   --------------------------------------------------------------------------- */
+
+@supports (animation-timeline: view()) {
+  /* WOW 2 «La mancha» — Handled by GSAP now. */
+  /* Parallax — Handled by GSAP now. */
+}
+
+/* ---------------------------------------------------------------------------
+   4. TRANSITIONS — View Transitions API
+   WOW 4 «El pase» (cross-document, CSS-only) and WOW 5 «La criba» (same-doc).
+   --------------------------------------------------------------------------- */
+
+@view-transition {
+  navigation: auto;
+}
+
+/* Chrome fires the root cross-fade by default; keep it short so navigation
+   never feels slowed — the shared element carries the story. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 260ms;
+  animation-timing-function: var(--ease-move);
+}
+
+/* The nav holds still while the world changes underneath it */
+[data-vt='nav'] {
+  view-transition-name: nav;
+}
+
+/* The shared element: assigned to the clicked card only (see Base.astro), and
+   always present on a venue hero, so exactly one pair ever morphs. */
+.vt-casa {
+  view-transition-name: casa;
+}
+
+::view-transition-group(casa) {
+  animation-duration: 420ms;
+  animation-timing-function: var(--ease-move);
+}
+
+/* WOW 5 — the sieve. Survivors glide (FLIP is free); leavers ink out. */
+@keyframes criba-out {
+  to { opacity: 0; transform: scale(0.96); }
+}
+
+@keyframes criba-in {
+  from { opacity: 0; transform: scale(0.98) translateY(10px); }
+}
+
+::view-transition-old(.criba) {
+  animation: criba-out 200ms var(--ease-out) both;
+}
+
+::view-transition-new(.criba) {
+  animation: criba-in 320ms var(--ease-out) both;
+}
+
+/* ---------------------------------------------------------------------------
+   5. MICRO — pointer/keyboard feedback. Colour and position only.
+   --------------------------------------------------------------------------- */
+
+.btn--stamp:active,
+.btn--primary:active {
+  transform: scale(0.97) translateY(2px);
+  rotate: 0deg;
+  box-shadow: none;
+}
+
+@media (hover: hover) {
+  .portada__more span,
+  .universe__arrow {
+    display: inline-block;
+    transition: transform var(--t-micro) var(--ease-out);
+  }
+
+  .portada:hover .portada__more span {
+    transform: translateX(5px);
+  }
+}
+
+/* The result count rolls when the picker filters */
+@keyframes cifra-roll {
+  from { opacity: 0; transform: translateY(-0.35em); }
+  to { opacity: 1; transform: none; }
+}
+
+.resultado__n[data-rolled] {
+  animation: cifra-roll 260ms var(--ease-snap) both;
+}
+
+/* ---------------------------------------------------------------------------
+   6. REDUCED MOTION — the page is simply already printed. Nothing is lost.
+   --------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .is-ready [data-reveal],
+  .is-ready [data-reveal='line'],
+  .is-ready [data-reveal='stamp'],
+  .is-ready [data-reveal='rule'],
+  .is-ready [data-reveal='field'] {
+    opacity: 1;
+    transform: none;
+    clip-path: none;
+    transition: none;
+  }
+
+  .tirada [data-print],
+  .tirada [data-print]::before,
+  .tirada [data-print]::after {
+    animation: none !important;
+  }
+
+  [data-ink-spread],
+  [data-parallax],
+  [data-reel-progress],
+  [data-reel] [data-reel-tick] {
+    animation: none !important;
+    clip-path: none !important;
+    transform: none !important;
+    scale: 1 !important;
+    opacity: 1 !important;
+  }
+
+  [data-reel-progress] {
+    transform: scaleX(1) !important;
+  }
+
+  .teletipo__track {
+    animation: none !important;
+    will-change: auto;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+
+  .resultado__n[data-rolled] {
+    animation: none;
+  }
+}

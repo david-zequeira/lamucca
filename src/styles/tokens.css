@@ -1,0 +1,269 @@
+/* ===========================================================================
+   Lamucca — Design Tokens
+   Concept: «A DOS TINTAS» — see docs/strategy/design-system.md
+            and DESIGN-DECISIONS.md #015
+
+   Two layers:
+     PRIMITIVES  the palette and raw scales (--ink, --space-m)
+     SEMANTIC    role aliases consumed by components (--text-primary, --stamp-fill)
+
+   Components must consume SEMANTIC tokens. No raw hex, px font-size, or bespoke
+   easing anywhere else in the codebase.
+
+   Contrast ratios noted below are measured, and are acceptance criteria.
+   =========================================================================== */
+
+:root {
+  /* ------------------------------------------------------------------------
+     1. PRIMITIVES — Color
+     Two inks on paper. Everything else is a condiment.
+     ------------------------------------------------------------------------ */
+
+  /* The page */
+  --paper: #f4eee3;
+  --paper-deep: #ece3d2;
+
+  /* First ink */
+  --ink: #201b16;      /* 14.8:1 on paper — AAA */
+  --ink-soft: #4c443b; /*  8.3:1 on paper — AAA */
+  --ink-faint: #6d6357;/*  5.1:1 on paper — AA  */
+
+  /* Second ink.
+     --tomato is 4.05:1 on paper: DECORATIVE + large text (>=24px) only.
+     --tomato-deep is 5.4:1: the stamp fill and all small tomato text. */
+  --tomato: #d2401e;
+  --tomato-deep: #b23317;
+  --tomato-darkest: #96280f; /* stamp hover — "re-ink" */
+
+  /* Casa accents. Each field dictates its own text ink (see --on-* below). */
+  --butter: #e8b940; /* ink on butter  9.3:1 — never paper (1.6:1) */
+  --olive: #5d6141;  /* paper on olive 5.6:1 — never ink   (2.6:1) */
+
+  /* The brand heart. Decorative only — 2.5:1. Never text, never a CTA. */
+  --coral: #ff6863;
+
+  /* Lines */
+  --line: rgb(32 27 22 / 0.16);
+  --line-inverse: rgb(244 238 227 / 0.2);
+
+  /* ------------------------------------------------------------------------
+     2. PRIMITIVES — Typography
+     Two voices. Never a third family.
+     ------------------------------------------------------------------------ */
+
+  --font-display: 'Fraunces Variable', 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-text: 'Archivo Variable', 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+
+  /* Fluid scale: 1.19 ratio @375px → 1.28 @1440px */
+  --step--1: clamp(0.8125rem, 0.79rem + 0.11vw, 0.875rem);  /* 13 → 14 */
+  --step-0: clamp(1rem, 0.96rem + 0.19vw, 1.125rem);        /* 16 → 18 */
+  --step-1: clamp(1.1875rem, 1.11rem + 0.33vw, 1.4375rem);  /* 19 → 23 */
+  --step-2: clamp(1.5rem, 1.35rem + 0.66vw, 1.9375rem);     /* 24 → 31 */
+  --step-3: clamp(1.9375rem, 1.66rem + 1.17vw, 2.75rem);    /* 31 → 44 */
+  --step-4: clamp(2.5rem, 2.03rem + 2vw, 4rem);             /* 40 → 64 */
+  --step-5: clamp(3.125rem, 2.31rem + 3.47vw, 5.625rem);    /* 50 → 90 */
+  --step-6: clamp(3.75rem, 2.51rem + 5.31vw, 7.5rem);       /* 60 → 120 */
+
+  /* Weights */
+  --weight-regular: 400;
+  --weight-medium: 480;
+  --weight-display: 560; /* Fraunces headlines */
+  --weight-semi: 600;
+  --weight-label: 640;   /* Archivo caps labels */
+  --weight-stamp: 700;
+
+  /* Tracking — tightens as size grows, opens with caps */
+  --track-display: -0.02em;
+  --track-title: -0.015em;
+  --track-tight: -0.01em;
+  --track-body: 0em;
+  --track-stamp: 0.1em;
+  --track-label: 0.14em;
+
+  /* Leading */
+  --leading-hero: 1.02;
+  --leading-title: 1.06;
+  --leading-card: 1.1;
+  --leading-quote: 1.15;
+  --leading-snug: 1.3;
+  --leading-lead: 1.5;
+  --leading-body: 1.6;
+
+  /* Measure */
+  --measure-body: 62ch;
+  --measure-editorial: 52ch;
+  --measure-lead: 36ch;
+  --measure-hero: 13ch;
+  --measure-title: 18ch;
+
+  /* ------------------------------------------------------------------------
+     3. PRIMITIVES — Space (4px base, 8px rhythm)
+     ------------------------------------------------------------------------ */
+
+  --space-2xs: clamp(0.5rem, 0.48rem + 0.1vw, 0.5625rem);   /*  8 →  9 */
+  --space-xs: clamp(0.75rem, 0.71rem + 0.19vw, 0.875rem);   /* 12 → 14 */
+  --space-s: clamp(1rem, 0.96rem + 0.19vw, 1.125rem);       /* 16 → 18 */
+  --space-m: clamp(1.5rem, 1.43rem + 0.29vw, 1.6875rem);    /* 24 → 27 */
+  --space-l: clamp(2rem, 1.91rem + 0.38vw, 2.25rem);        /* 32 → 36 */
+  --space-xl: clamp(3rem, 2.87rem + 0.58vw, 3.375rem);      /* 48 → 54 */
+  --space-2xl: clamp(4rem, 3.48rem + 2.23vw, 5.5rem);       /* 64 → 88 */
+  --space-3xl: clamp(6rem, 4.96rem + 4.47vw, 9rem);         /* 96 → 144 */
+
+  /* ------------------------------------------------------------------------
+     4. PRIMITIVES — Layout
+     ------------------------------------------------------------------------ */
+
+  --container: 84rem;        /* 1344px */
+  --container-narrow: 56rem; /*  896px — reading-dense pages */
+  --gutter: clamp(1.75rem, 6vw, 4.5rem);
+  --grid-columns: 12;        /* 8 at tablet, 4 at mobile (see base.css) */
+  --grid-gap: var(--space-l);
+
+  /* Breakpoints — documentation only; @media cannot read custom properties */
+  --bp-s: 480px;
+  --bp-m: 700px;
+  --bp-l: 900px;
+  --bp-xl: 1100px;
+
+  /* Fixed chrome */
+  --nav-height: 64px;
+  --nav-height-lg: 76px;
+  --reserve-bar-height: 76px;
+
+  /* ------------------------------------------------------------------------
+     5. PRIMITIVES — Radius, rules, elevation
+     Depth comes from printed offsets, never from soft shadows.
+     ------------------------------------------------------------------------ */
+
+  --radius-card: 14px;
+  --radius-field: 12px;
+  --radius-pill: 999px;
+
+  --rule-width: 1.5px;             /* the press rule — a signature */
+  --rule: var(--rule-width) solid var(--ink);
+  --rule-inverse: var(--rule-width) solid var(--paper);
+  --hairline: 1px solid var(--line);
+
+  --shadow-print: 0 12px 0 -6px var(--ink); /* paper lifting; the only shadow */
+
+  /* ------------------------------------------------------------------------
+     6. PRIMITIVES — Motion
+     The press, not the cursor.
+     ------------------------------------------------------------------------ */
+
+  --t-instant: 120ms;
+  --t-micro: 200ms;
+  --t-stamp: 250ms;
+  --t-enter: 400ms;
+  --t-reveal: 700ms;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);   /* ink drying */
+  --ease-snap: cubic-bezier(0.34, 1.3, 0.64, 1);/* the press */
+  --ease-move: cubic-bezier(0.4, 0, 0.2, 1);    /* positional */
+
+  --stamp-rotation: -1.5deg; /* the only rotation in the system */
+  --stagger: 90ms;
+
+  /* ------------------------------------------------------------------------
+     7. PRIMITIVES — Z-scale
+     ------------------------------------------------------------------------ */
+
+  --z-base: 1;
+  --z-raised: 10;
+  --z-sticky: 40;
+  --z-nav: 50;
+  --z-overlay: 60;
+  --z-sheet: 70;
+
+  /* ========================================================================
+     8. SEMANTIC TOKENS — what components actually consume
+     ======================================================================== */
+
+  /* Surfaces */
+  --surface-page: var(--paper);
+  --surface-raised: var(--paper-deep);
+  --surface-inverse: var(--ink);
+  --surface-border: var(--ink);
+
+  /* Text hierarchy */
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-soft);
+  --text-tertiary: var(--ink-faint);
+  --text-accent: var(--tomato-deep);
+  --text-inverse: var(--paper);
+
+  /* Text ink required by each accent field — enforced, not chosen per component */
+  --on-butter: var(--ink);
+  --on-olive: var(--paper);
+  --on-tomato: var(--paper);
+  --on-ink: var(--paper);
+
+  /* The stamp (primary CTA).
+     Fill is tomato-DEEP so the label passes AA (5.4:1). Non-negotiable. */
+  --stamp-fill: var(--tomato-deep);
+  --stamp-fill-hover: var(--tomato-darkest);
+  --stamp-text: var(--paper);
+
+  /* Focus */
+  --focus-ring: var(--rule-width) dashed var(--tomato);
+  --focus-offset: 4px;
+
+  /* Imagery — the duotone law.
+     Full color is earned: galleries on interaction, commissioned heroes, carta proof. */
+  --img-duotone-shadow: var(--ink);
+  --img-duotone-highlight: var(--paper);
+  --img-duotone-filter: grayscale(1) contrast(1.08) brightness(1.02);
+  --img-blend: multiply;
+  --img-transition: filter var(--t-enter) var(--ease-out);
+
+  /* Aspect ratios */
+  --ratio-cover: 3 / 2;
+  --ratio-portrait: 4 / 5;
+  --ratio-hero: 16 / 9;
+  --ratio-square: 1 / 1;
+
+  /* ========================================================================
+     9. THE EDITION MECHANIC
+     Transplanted from concept «Siempre Es La Hora» (DESIGN-DECISIONS #015).
+     A [data-edition] attribute on <html> shifts accent temperature only.
+     Cosmetic, cacheable, never layout-shifting, fully ignorable.
+     ======================================================================== */
+
+  --edition-accent: var(--tomato);
+  --edition-warmth: 0deg;
+}
+
+/* Mañana — butter warmth (café, obrador, coworking hours) */
+[data-edition='manana'] {
+  --edition-accent: var(--butter);
+}
+
+/* Aperitivo / tarde — the default tomato register */
+[data-edition='aperitivo'],
+[data-edition='tarde'] {
+  --edition-accent: var(--tomato);
+}
+
+/* Noche — the coral glow ("cenas que acaban en baile") */
+[data-edition='noche'] {
+  --edition-accent: var(--coral);
+}
+
+/* ==========================================================================
+   10. INK SCOPE — inverted surfaces (the ink chapters, footer)
+   Applied with [data-ink] on a section; text tokens flip once, not per component.
+   ========================================================================== */
+
+[data-ink] {
+  --surface-page: var(--ink);
+  --surface-raised: rgb(244 238 227 / 0.06);
+  --surface-border: var(--paper);
+  --text-primary: var(--paper);
+  --text-secondary: rgb(244 238 227 / 0.85);
+  --text-tertiary: rgb(244 238 227 / 0.6);
+  --text-accent: var(--butter);
+  --line: var(--line-inverse);
+
+  background: var(--surface-page);
+  color: var(--text-primary);
+}

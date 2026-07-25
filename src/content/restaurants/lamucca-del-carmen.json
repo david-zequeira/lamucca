@@ -1,0 +1,45 @@
+{
+  "name": "Lamucca del Carmen",
+  "slug": "lamucca-del-carmen",
+  "concept": "lamucca",
+  "neighborhood": "Centro · Sol",
+  "address": "Plaza del Carmen 5, 28013 Madrid",
+  "city": "Madrid",
+  "tagline": "La localización casi secreta",
+  "description": "Barra de mármol, lámparas de cristal, vigas de madera, murales y mobiliario art déco en una plaza escondida a un minuto de Sol. El centro de Madrid, sin el ruido del centro de Madrid.",
+  "character": [
+    "Plaza escondida junto a Sol",
+    "Murales y art déco"
+  ],
+  "phone": "915210000",
+  "bookingUrl": "https://www.covermanager.com/reservation/module_restaurant/restaurante-lamuccadelcarmen/spanish",
+  "openedYear": 2017,
+  "order": 5,
+  "accent": "butter",
+  "sources": [
+    "https://www.lamuccacompany.com/la-carmen-nuevo-restaurante-de-lamucca-en-madrid/"
+  ],
+  "verified": true,
+  "moods": [
+    "secreto",
+    "animado"
+  ],
+  "occasions": [
+    "pareja",
+    "amigos",
+    "tardeo"
+  ],
+  "zone": "centro",
+  "times": [
+    "comida",
+    "tardeo",
+    "cena"
+  ],
+  "groups": [
+    "dos",
+    "pocos"
+  ],
+  "features": [
+    "Plaza escondida"
+  ]
+}

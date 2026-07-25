@@ -1,0 +1,40 @@
+{
+  "name": "Lamucca del Mar",
+  "slug": "lamucca-del-mar",
+  "concept": "mar",
+  "neighborhood": "Port Petit · Cala d'Or",
+  "address": "Port Petit, Cala d'Or, Mallorca",
+  "city": "Mallorca",
+  "tagline": "La primera casa junto al mar",
+  "description": "En Port Petit, el puerto más antiguo de Baleares: carta mediterránea, interiores de Eva Quintana con artesanos mallorquines y el espíritu Lamucca mirando al Mediterráneo.",
+  "character": [
+    "Primera casa fuera de Madrid",
+    "Interiores Eva Quintana",
+    "Carta mediterránea"
+  ],
+  "order": 18,
+  "accent": "olive",
+  "sources": [
+    "https://www.lamuccacompany.com/abre-lamucca-del-mar-en-mallorca/"
+  ],
+  "verified": true,
+  "moods": [
+    "tranquilo"
+  ],
+  "occasions": [
+    "pareja",
+    "familia"
+  ],
+  "zone": "fuera",
+  "times": [
+    "comida",
+    "cena"
+  ],
+  "groups": [
+    "dos",
+    "pocos"
+  ],
+  "features": [
+    "Junto al mar"
+  ]
+}

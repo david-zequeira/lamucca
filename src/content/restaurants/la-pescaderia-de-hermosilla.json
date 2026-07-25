@@ -1,0 +1,45 @@
+{
+  "name": "La Pescadería de Hermosilla",
+  "slug": "la-pescaderia-de-hermosilla",
+  "concept": "pescaderia",
+  "neighborhood": "Barrio de Salamanca",
+  "address": "Calle Hermosilla 46, Madrid",
+  "city": "Madrid",
+  "tagline": "El mar, en Salamanca",
+  "description": "Dos plantas, dos reservados, terraza y espacio de club. La carta marinera de La Pescadería, en versión Salamanca, desde 2021.",
+  "character": [
+    "Dos reservados",
+    "Terraza",
+    "Espacio club"
+  ],
+  "bookingUrl": "https://www.covermanager.com/reservation/module_restaurant/restaurante-lapescaderiahermosilla/spanish",
+  "openedYear": 2021,
+  "order": 11,
+  "accent": "olive",
+  "sources": [
+    "https://www.lamuccacompany.com/la-pescaderia/",
+    "https://lapescaderiadehermosilla.es/"
+  ],
+  "verified": true,
+  "moods": [
+    "tranquilo"
+  ],
+  "occasions": [
+    "celebracion",
+    "trabajo",
+    "pareja"
+  ],
+  "zone": "salamanca",
+  "times": [
+    "comida",
+    "cena"
+  ],
+  "groups": [
+    "pocos",
+    "muchos"
+  ],
+  "features": [
+    "Terraza",
+    "Reservados"
+  ]
+}

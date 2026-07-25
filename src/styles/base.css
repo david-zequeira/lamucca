@@ -1,0 +1,192 @@
+/* La Mucca Company — base styles */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-text);
+  font-size: var(--step-0);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+img,
+picture,
+video,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 560;
+  line-height: 1.04;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+p {
+  max-width: 62ch;
+  text-wrap: pretty;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+::selection {
+  background: var(--tomato);
+  color: var(--paper);
+}
+
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+  border-radius: 2px;
+}
+
+/* --- Shared primitives ------------------------------------------------- */
+
+.container {
+  width: min(var(--container), 100%);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+  box-sizing: border-box;
+}
+
+/* Skip link — visible only on focus */
+.skip {
+  position: absolute;
+  left: var(--gutter);
+  top: -100px;
+  z-index: 100;
+  padding: 0.7em 1.2em;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-text);
+  font-size: var(--step--1);
+  font-weight: 640;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: var(--radius-pill);
+  transition: top var(--t-micro) var(--ease-out);
+}
+
+.skip:focus {
+  top: var(--space-xs);
+}
+
+/* The sticky nav must never cover an anchored heading */
+[id] {
+  scroll-margin-top: calc(var(--nav-height) + var(--space-m));
+}
+
+@media (min-width: 900px) {
+  [id] {
+    scroll-margin-top: calc(var(--nav-height-lg) + var(--space-m));
+  }
+}
+
+/* Street-signage label: the LOW register (concept 001) */
+.label {
+  font-family: var(--font-text);
+  font-size: var(--step--1);
+  font-weight: 640;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Editorial italic: the HIGH register */
+.voice {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 420;
+  letter-spacing: 0;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  min-height: 48px;
+  padding: 0.8em 1.7em;
+  border: var(--rule-width) solid var(--ink);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-text);
+  font-size: var(--step--1);
+  font-weight: 640;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background var(--t-micro) var(--ease-out), color var(--t-micro) var(--ease-out),
+    border-color var(--t-micro) var(--ease-out);
+}
+
+.btn:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* El sello — the stamp. The site's single most important object.
+   Fill is --stamp-fill (tomato-deep, 5.4:1) so the label passes AA;
+   plain --tomato measures 4.05:1 and is decorative only. */
+.btn--stamp,
+.btn--primary {
+  border-color: var(--stamp-fill);
+  background: var(--stamp-fill);
+  color: var(--stamp-text);
+  rotate: var(--stamp-rotation);
+  box-shadow: var(--shadow-print);
+  transition: background var(--t-micro) var(--ease-out),
+    border-color var(--t-micro) var(--ease-out), rotate var(--t-micro) var(--ease-snap),
+    box-shadow var(--t-micro) var(--ease-out), transform var(--t-micro) var(--ease-out);
+}
+
+.btn--stamp:hover,
+.btn--primary:hover {
+  border-color: var(--stamp-fill-hover);
+  background: var(--stamp-fill-hover);
+  color: var(--stamp-text);
+  rotate: 0deg; /* the stamp straightens as it re-inks */
+  box-shadow: 0 4px 0 -2px var(--ink);
+  transform: translateY(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn--stamp,
+  .btn--primary {
+    transition: background var(--t-micro) var(--ease-out);
+  }
+}
+
+/* Scroll reveals — inert until JS adds .is-ready, so no-JS users lose nothing */
+/* Reveals, load choreography, scroll-driven progress, transitions and
+   reduced-motion handling all live in styles/motion.css. */

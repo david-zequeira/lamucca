@@ -1,0 +1,41 @@
+{
+  "name": "Lamucca de Serrano",
+  "slug": "lamucca-de-serrano",
+  "concept": "lamucca",
+  "neighborhood": "Barrio de Salamanca",
+  "address": "Calle Serrano 91, Madrid",
+  "city": "Madrid",
+  "tagline": "Chicago clandestino, años 20",
+  "description": "Hormigón y mármol antiguo que recuerdan al Chicago clandestino de los años veinte. Elegancia cosmopolita en plena milla de oro, sin perder el acento Lamucca.",
+  "character": [
+    "Hormigón y mármol antiguo",
+    "Elegancia cosmopolita"
+  ],
+  "phone": "915210000",
+  "bookingUrl": "https://www.covermanager.com/reservation/module_restaurant/restaurante-lamuccadeserrano/spanish",
+  "openedYear": 2016,
+  "order": 4,
+  "accent": "tomato",
+  "sources": [
+    "https://www.lamuccacompany.com/lamucca-serrano/"
+  ],
+  "verified": true,
+  "moods": [
+    "tranquilo",
+    "secreto"
+  ],
+  "occasions": [
+    "pareja",
+    "trabajo"
+  ],
+  "zone": "salamanca",
+  "times": [
+    "comida",
+    "cena"
+  ],
+  "groups": [
+    "dos",
+    "pocos"
+  ],
+  "features": []
+}

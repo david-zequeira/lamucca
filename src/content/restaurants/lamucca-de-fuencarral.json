@@ -1,0 +1,46 @@
+{
+  "name": "Lamucca de Fuencarral",
+  "slug": "lamucca-de-fuencarral",
+  "concept": "lamucca",
+  "neighborhood": "Malasaña · Chueca",
+  "address": "Calle Fuencarral 95, 28004 Madrid",
+  "city": "Madrid",
+  "tagline": "Organik ⚡ Parriya",
+  "description": "El primer Organik Parriya del grupo: parrilla y producto orgánico. De día, café de especialidad y espacio de coworking; siempre pet friendly. La casa que vive al ritmo de Fuencarral.",
+  "character": [
+    "Parrilla orgánica",
+    "Coworking de día",
+    "Pet friendly"
+  ],
+  "phone": "915210000",
+  "bookingUrl": "https://www.covermanager.com/reservation/module_restaurant/restaurante-lamuccadefuencarral/spanish",
+  "openedYear": 2019,
+  "order": 6,
+  "accent": "olive",
+  "sources": [
+    "https://www.lamuccacompany.com/lamucca-de-fuencarral/"
+  ],
+  "verified": true,
+  "moods": [
+    "luminoso"
+  ],
+  "occasions": [
+    "trabajo",
+    "amigos"
+  ],
+  "zone": "malasana",
+  "times": [
+    "desayuno",
+    "comida",
+    "cena"
+  ],
+  "groups": [
+    "solo",
+    "pocos"
+  ],
+  "features": [
+    "Pet friendly",
+    "Parrilla orgánica",
+    "Coworking"
+  ]
+}

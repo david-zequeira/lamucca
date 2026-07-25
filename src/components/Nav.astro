@@ -2,6 +2,7 @@
 /* The doors (information-architecture.md §1). While the experience lives on one
    page these resolve to chapters; they become routes as those pages ship. */
 const base = import.meta.env.BASE_URL;
+const isVenuePage = Astro.url.pathname.includes('/restaurantes/');
 const links = [
   { href: `${base}#descubre`, label: 'Restaurantes' },
   { href: `${base}#madrid`, label: 'Historia' },
@@ -45,10 +46,12 @@ const links = [
   </div>
 </header>
 
-<!-- Mobile Bottom Bar for reachable CTA -->
-<div class="mobile-bottom-bar" data-mobile-bar>
-  <a href={`${base}#reserva`} class="btn btn--stamp mobile-bottom-bar__cta">Reservar mesa</a>
-</div>
+<!-- Mobile Bottom Bar for reachable CTA (home only — venues have their own) -->
+{!isVenuePage && (
+  <div class="mobile-bottom-bar" data-mobile-bar>
+    <a href={`${base}#reserva`} class="btn btn--stamp mobile-bottom-bar__cta">Reservar mesa</a>
+  </div>
+)}
 
 <div class="overlay" id="menu-overlay" data-overlay hidden>
   <nav class="overlay__nav container" aria-label="Menú móvil">
@@ -75,6 +78,12 @@ const links = [
     /* At the top, over the cinematic hero, text must be light */
     color: var(--paper);
     --ink: var(--paper); /* Forces burger and other elements to be light */
+  }
+
+  .nav.is-open {
+    z-index: calc(var(--z-overlay) + 1);
+    color: var(--text-primary);
+    --ink: #201b16;
   }
 
   .nav.is-scrolled {
@@ -200,6 +209,17 @@ const links = [
     background: var(--paper);
     display: grid;
     align-content: center;
+    padding-block: calc(var(--nav-height) + var(--space-l)) var(--space-xl);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .overlay[hidden] {
+    display: none !important;
+  }
+
+  .overlay:not(.is-open) .overlay__link {
+    pointer-events: none;
   }
 
   .overlay__nav {
@@ -213,12 +233,13 @@ const links = [
     align-items: baseline;
     gap: var(--space-s);
     font-family: var(--font-display);
-    font-size: var(--step-4);
+    font-size: clamp(1.75rem, 8vw, var(--step-4));
     font-weight: 540;
     line-height: 1.1;
     text-decoration: none;
     opacity: 0;
     transform: translateY(16px);
+    min-height: 44px;
   }
 
   .overlay.is-open .overlay__link {
@@ -245,12 +266,12 @@ const links = [
     bottom: 0;
     left: 0;
     right: 0;
-    padding: var(--space-s) var(--gutter);
+    padding: var(--space-s) var(--gutter) calc(var(--space-s) + env(safe-area-inset-bottom));
     background: linear-gradient(to top, var(--surface-page) 60%, transparent);
     z-index: calc(var(--z-nav) - 1);
     display: flex;
     justify-content: center;
-    pointer-events: none; /* Let clicks pass through the gradient */
+    pointer-events: none;
   }
 
   .mobile-bottom-bar__cta {
@@ -258,9 +279,9 @@ const links = [
     max-width: 400px;
     pointer-events: auto;
     box-shadow: var(--shadow-print);
-    /* Ensure it stands out and is extremely reachable */
     min-height: 56px;
     font-size: var(--step-0);
+    rotate: 0deg;
   }
 
   @keyframes overlay-in {
@@ -310,14 +331,14 @@ const links = [
     if (nav && !nav.dataset.init) {
       nav.dataset.init = 'true';
       const handleScroll = () => {
-        if (window.scrollY > 20) { /* Reduced from 50 to trigger earlier */
+        if (window.scrollY > 20) {
           nav.classList.add('is-scrolled');
         } else {
           nav.classList.remove('is-scrolled');
         }
       };
       window.addEventListener('scroll', handleScroll, { passive: true });
-      handleScroll(); // init
+      handleScroll();
     }
 
     if (burger && overlay && !burger.dataset.init) {
@@ -326,6 +347,7 @@ const links = [
         burger.setAttribute('aria-expanded', String(open));
         overlay.hidden = !open;
         overlay.classList.toggle('is-open', open);
+        nav?.classList.toggle('is-open', open);
         document.body.style.overflow = open ? 'hidden' : '';
       };
 

@@ -10,6 +10,7 @@ import { getCollection } from 'astro:content';
 const bookable = (await getCollection('restaurants'))
   .filter((r) => r.data.bookingUrl)
   .sort((a, b) => a.data.order - b.data.order);
+const base = import.meta.env.BASE_URL;
 ---
 
 <section class="reserva" id="reserva" data-ink data-ink-spread aria-labelledby="reserva-title">
@@ -28,7 +29,7 @@ const bookable = (await getCollection('restaurants'))
     <ul class="mesas">
       {bookable.map((r, i) => (
         <li class="mesa" data-reveal style={`--reveal-delay: ${(i % 4) * 50}ms`}>
-          <a class="mesa__name" href={`/restaurantes/${r.data.slug}/`}>
+          <a class="mesa__name" href={`${base}restaurantes/${r.data.slug}/`}>
             <span class={`mesa__tick mesa__tick--${r.data.accent}`} aria-hidden="true"></span>
             {r.data.name}
           </a>

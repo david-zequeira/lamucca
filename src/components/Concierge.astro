@@ -99,7 +99,7 @@ const aiVenues = venues.map(v => ({
     position: fixed;
     bottom: var(--space-l);
     right: var(--space-l);
-    z-index: 90;
+    z-index: var(--z-sticky);
     display: flex;
     align-items: center;
     gap: var(--space-xs);
@@ -128,7 +128,18 @@ const aiVenues = venues.map(v => ({
 
   @media (max-width: 899px) {
     .concierge-fab {
-      bottom: calc(var(--space-l) + 60px); /* Avoid overlapping with mobile bottom bar */
+      /* Above the reserve bar, never on top of the CTA */
+      bottom: calc(var(--reserve-bar-height) + env(safe-area-inset-bottom) + var(--space-s));
+      right: var(--gutter);
+      left: auto;
+      z-index: calc(var(--z-nav) - 2);
+      padding: 0.65rem 1rem;
+      font-size: var(--step--1);
+      min-height: 44px;
+    }
+
+    .fab-text {
+      display: none;
     }
   }
 
@@ -136,7 +147,7 @@ const aiVenues = venues.map(v => ({
   .concierge-overlay {
     position: fixed;
     inset: 0;
-    z-index: 100;
+    z-index: var(--z-sheet);
     display: flex;
     justify-content: flex-end;
   }

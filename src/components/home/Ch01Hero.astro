@@ -78,7 +78,8 @@
     display: flex;
     align-items: center;
     padding-block: calc(var(--nav-height-lg) + var(--space-xl)) var(--space-2xl);
-    overflow: hidden;
+    overflow-x: clip;
+    overflow-y: visible;
   }
 
   /* --- Cinematic Background --- */
@@ -228,26 +229,35 @@
 
   @media (max-width: 899px) {
     .hero {
-      padding-block: calc(var(--nav-height) + var(--space-l)) var(--space-xl);
+      min-height: 100dvh;
+      padding-block: calc(var(--nav-height) + var(--space-m))
+        calc(var(--space-xl) + var(--reserve-bar-height) + env(safe-area-inset-bottom));
       align-items: flex-end;
     }
 
     .hero__title {
-      max-width: 14ch;
+      max-width: 12ch;
+      font-size: clamp(1.75rem, 8.5vw, 2.35rem);
     }
 
     .hero__lead {
       max-width: 34ch;
+      font-size: var(--step-0);
     }
 
     .hero__actions {
       flex-direction: column;
       align-items: stretch;
       width: 100%;
+      gap: var(--space-s);
     }
 
     .hero__actions .btn {
       width: 100%;
+    }
+
+    .hero__footer {
+      margin-top: var(--space-l);
     }
   }
 

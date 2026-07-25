@@ -15,6 +15,7 @@ interface Props {
 
 const { venue, index, compact = false } = Astro.props;
 const d = venue.data;
+const base = import.meta.env.BASE_URL;
 const num = index !== undefined ? String(index + 1).padStart(2, '0') : null;
 ---
 
@@ -27,13 +28,13 @@ const num = index !== undefined ? String(index + 1).padStart(2, '0') : null;
   data-times={d.times.join(' ')}
   data-groups={d.groups.join(' ')}
 >
-  <a class={`campo campo--${d.accent} portada__campo`} href={`/restaurantes/${d.slug}/`} tabindex="-1" aria-hidden="true">
+  <a class={`campo campo--${d.accent} portada__campo`} href={`${base}restaurantes/${d.slug}/`} tabindex="-1" aria-hidden="true">
     <picture>
       <!-- Modern formats, progressive enhancement -->
-      <source type="image/avif" srcset={`/assets/casas/${d.slug}.avif`} />
-      <source type="image/webp" srcset={`/assets/casas/${d.slug}.webp`} />
+      <source type="image/avif" srcset={`${base}assets/casas/${d.slug}.avif`} />
+      <source type="image/webp" srcset={`${base}assets/casas/${d.slug}.webp`} />
       <img 
-        src={`/assets/casas/${d.slug}.jpg`} 
+        src={`${base}assets/casas/${d.slug}.jpg`} 
         alt={`Interior de ${d.name}`}
         loading="lazy"
         decoding="async"
@@ -50,7 +51,7 @@ const num = index !== undefined ? String(index + 1).padStart(2, '0') : null;
 
   <div class="portada__body">
     <h3 class="portada__name">
-      <a href={`/restaurantes/${d.slug}/`}>{d.name}</a>
+      <a href={`${base}restaurantes/${d.slug}/`}>{d.name}</a>
     </h3>
     <p class="portada__hood label">{d.neighborhood}</p>
     <p class="portada__tag voice">{d.tagline}</p>
@@ -75,9 +76,9 @@ const num = index !== undefined ? String(index + 1).padStart(2, '0') : null;
           Reservar
         </a>
       ) : (
-        <a class="btn portada__stamp" href={`/restaurantes/${d.slug}/`}>Ver la casa</a>
+        <a class="btn portada__stamp" href={`${base}restaurantes/${d.slug}/`}>Ver la casa</a>
       )}
-      <a class="portada__more label" href={`/restaurantes/${d.slug}/`}>
+      <a class="portada__more label" href={`${base}restaurantes/${d.slug}/`}>
         Conocer <span aria-hidden="true">→</span>
       </a>
     </div>

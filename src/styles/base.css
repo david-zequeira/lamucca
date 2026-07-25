@@ -22,7 +22,14 @@ body {
   font-size: var(--step-0);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  overflow-x: clip;
+  overflow-x: hidden;
+}
+
+@media (max-width: 899px) {
+  body {
+    /* Space for the sticky reserve CTA */
+    padding-bottom: calc(var(--reserve-bar-height) + env(safe-area-inset-bottom));
+  }
 }
 
 img,

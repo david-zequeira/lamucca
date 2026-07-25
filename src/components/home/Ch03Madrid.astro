@@ -8,6 +8,7 @@
 import { getCollection } from 'astro:content';
 
 const all = await getCollection('restaurants');
+const base = import.meta.env.BASE_URL;
 const tira = all
   .filter((r) => r.data.openedYear)
   .sort((a, b) => (a.data.openedYear ?? 0) - (b.data.openedYear ?? 0));
@@ -81,7 +82,7 @@ const barrios = [
     <ol class="tira" tabindex="0" role="list" aria-label="Aperturas de Lamucca por año" data-reel>
       {tira.map((r) => (
         <li class="tira__beat">
-          <a href={`/restaurantes/${r.data.slug}/`} class="tira__link">
+          <a href={`${base}restaurantes/${r.data.slug}/`} class="tira__link">
             <span
               class={`tira__tick tira__tick--${r.data.accent}`}
               aria-hidden="true"

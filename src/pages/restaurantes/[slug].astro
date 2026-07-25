@@ -208,21 +208,21 @@ const phonePretty = d.phone?.replace(/(\d{2,3})(\d{3})(\d{2})(\d{2})$/, '$1 $2 $
   }
 
   main {
-    padding-bottom: 76px; /* keep content clear of the reserve bar */
+    padding-bottom: calc(var(--reserve-bar-height) + env(safe-area-inset-bottom));
   }
 
   @media (min-width: 900px) {
-    .venue__content {
-      grid-template-columns: 1.4fr 1fr;
-      gap: var(--space-2xl);
-    }
-
     .reserve-bar {
       display: none;
     }
 
     main {
       padding-bottom: 0;
+    }
+
+    .venue__content {
+      grid-template-columns: 1.4fr 1fr;
+      gap: var(--space-2xl);
     }
   }
 </style>

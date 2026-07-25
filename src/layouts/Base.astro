@@ -49,27 +49,36 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://david-zeque
 
     <script>
       import '../scripts/motion.js';
-      
+
       // 1. Narrative reveals. The .is-ready gate keeps everything visible if JS
       //    never runs, so no content depends on this script.
       document.documentElement.classList.add('is-ready');
 
       const reveals = document.querySelectorAll('[data-reveal]');
+      const revealIn = (el: Element) => el.classList.add('is-in');
+
       if ('IntersectionObserver' in window) {
         const io = new IntersectionObserver(
           (entries) => {
             for (const e of entries) {
               if (e.isIntersecting) {
-                e.target.classList.add('is-in');
+                revealIn(e.target);
                 io.unobserve(e.target);
               }
             }
           },
-          { rootMargin: '0px 0px -10% 0px', threshold: 0.1 }
+          { rootMargin: '0px 0px -8% 0px', threshold: 0.05 }
         );
         reveals.forEach((el) => io.observe(el));
+
+        // Safety net: never leave content invisible on flaky mobile browsers
+        window.setTimeout(() => {
+          reveals.forEach((el) => {
+            if (!el.classList.contains('is-in')) revealIn(el);
+          });
+        }, 2500);
       } else {
-        reveals.forEach((el) => el.classList.add('is-in'));
+        reveals.forEach(revealIn);
       }
 
       // 2. La edición — the paper changes with Madrid's clock.
@@ -119,7 +128,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://david-zeque
         (event) => {
           const target = event.target;
           if (!(target instanceof Element)) return;
-          const link = target.closest('a[href^="/restaurantes/"]');
+          const link = target.closest('a[href*="/restaurantes/"]');
           if (!link) return;
           clearPase();
           const card = link.closest('[data-venue]');

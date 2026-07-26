@@ -399,54 +399,64 @@ const clientVenues = venues.map(v => ({
 
 <style>
   .find-mucca {
-    padding-block: var(--space-3xl) var(--space-4xl);
+    padding-block: var(--space-3xl);
     background: var(--surface-page);
     overflow: hidden;
+    position: relative;
   }
 
   .find-mucca__container {
-    max-width: 800px;
+    max-width: var(--container-narrow);
     margin: 0 auto;
+    padding-inline: var(--gutter);
   }
 
   .find-mucca__header {
     text-align: center;
-    margin-bottom: var(--space-2xl);
+    margin-bottom: var(--space-xl);
   }
 
   .find-mucca__title {
-    font-size: var(--step-4);
+    font-size: var(--step-3);
     font-family: var(--font-display);
     text-transform: uppercase;
     letter-spacing: var(--track-tight);
-    line-height: 1.1;
-    margin-bottom: var(--space-xs);
+    line-height: var(--leading-title);
+    margin-bottom: var(--space-2xs);
   }
 
   .find-mucca__subtitle {
     font-size: var(--step-1);
-    color: var(--text-secondary);
+    color: var(--text-tertiary);
+  }
+
+  .find-mucca__interactive {
+    max-width: 600px;
+    margin: 0 auto;
+    position: relative;
+    min-height: 480px;
   }
 
   .find-mucca__step-header {
     display: flex;
     align-items: center;
-    gap: var(--space-m);
-    margin-bottom: var(--space-xl);
-    min-height: 40px;
+    gap: var(--space-s);
+    margin-bottom: var(--space-l);
+    min-height: 48px;
   }
 
   .btn-back {
     background: transparent;
     border: none;
-    color: var(--text-secondary);
+    color: var(--text-tertiary);
     cursor: pointer;
-    padding: 8px;
+    padding: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    transition: background 0.2s, color 0.2s;
+    transition: background var(--t-micro) var(--ease-out), color var(--t-micro) var(--ease-out);
+    margin-left: -12px;
   }
 
   .btn-back:hover {
@@ -458,12 +468,13 @@ const clientVenues = venues.map(v => ({
     font-size: var(--step-2);
     font-family: var(--font-display);
     margin: 0;
+    letter-spacing: var(--track-title);
   }
 
   .find-mucca__options {
     display: flex;
     flex-direction: column;
-    gap: var(--space-s);
+    gap: var(--space-xs);
   }
 
   .option-card {
@@ -471,25 +482,26 @@ const clientVenues = venues.map(v => ({
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    min-height: 80px;
-    padding: var(--space-m) var(--space-l);
+    min-height: 72px;
+    padding: var(--space-m) var(--space-m);
     background: var(--surface-raised);
-    border: 1px solid var(--line);
+    border: var(--rule-width) solid var(--line);
     border-radius: var(--radius-card);
     cursor: pointer;
     text-align: left;
-    transition: border-color 0.3s, box-shadow 0.3s;
+    transition: border-color var(--t-micro) var(--ease-out), background var(--t-micro) var(--ease-out);
     will-change: transform;
   }
 
   .option-card:hover {
     border-color: var(--text-primary);
+    background: var(--surface-page);
   }
 
   .option-label {
     font-size: var(--step-1);
     font-family: var(--font-text);
-    font-weight: 500;
+    font-weight: var(--weight-medium);
     color: var(--text-primary);
   }
 
@@ -497,7 +509,10 @@ const clientVenues = venues.map(v => ({
   .find-mucca__result {
     display: flex;
     flex-direction: column;
-    gap: var(--space-xl);
+    gap: var(--space-l);
+    position: absolute;
+    inset: 0;
+    width: 100%;
   }
 
   .result-header {
@@ -505,16 +520,20 @@ const clientVenues = venues.map(v => ({
   }
 
   .result-title {
-    font-size: var(--step-1);
-    color: var(--text-secondary);
-    letter-spacing: 0.05em;
+    font-size: var(--step--1);
+    color: var(--text-tertiary);
+    letter-spacing: var(--track-label);
+    text-transform: uppercase;
+    font-family: var(--font-text);
+    font-weight: var(--weight-label);
   }
 
   .result-venue {
     background: var(--surface-raised);
     border-radius: var(--radius-card);
     overflow: hidden;
-    border: 1px solid var(--line);
+    border: var(--rule-width) solid var(--line);
+    box-shadow: var(--shadow-print);
   }
 
   .result-venue__image-wrapper {
@@ -523,39 +542,49 @@ const clientVenues = venues.map(v => ({
     overflow: hidden;
     position: relative;
     will-change: transform, opacity;
+    border-bottom: var(--rule-width) solid var(--line);
   }
 
   .result-venue__image-wrapper img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    opacity: 0.9;
+    mix-blend-mode: var(--img-blend);
   }
 
   .result-venue__content {
-    padding: var(--space-xl);
+    padding: var(--space-l);
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
   .result-venue__name {
-    font-size: var(--step-4);
+    font-size: var(--step-3);
     font-family: var(--font-display);
     text-transform: uppercase;
-    margin-bottom: var(--space-2xs);
+    margin-bottom: 4px;
+    letter-spacing: var(--track-tight);
   }
 
   .result-venue__barrio {
-    font-size: var(--step-0);
-    color: var(--text-secondary);
+    font-size: var(--step--1);
+    color: var(--text-tertiary);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: var(--track-label);
     margin-bottom: var(--space-m);
+    font-family: var(--font-text);
   }
 
   .result-venue__why {
-    font-size: var(--step-1);
-    line-height: 1.5;
-    max-width: 500px;
+    font-size: var(--step-0);
+    line-height: var(--leading-body);
+    color: var(--text-secondary);
+    max-width: 42ch;
     margin: 0 auto var(--space-xl);
+    text-wrap: pretty;
   }
 
   .result-venue__actions {
@@ -563,53 +592,77 @@ const clientVenues = venues.map(v => ({
     gap: var(--space-m);
     justify-content: center;
     flex-wrap: wrap;
+    width: 100%;
   }
 
   .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.8em 1.5em;
-    border-radius: 100px;
-    font-weight: 600;
+    padding: 0.6em 1.5em;
+    border-radius: var(--radius-pill);
+    font-weight: var(--weight-stamp);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: var(--track-stamp);
     text-decoration: none;
     font-size: var(--step--1);
-    min-height: 44px;
+    min-height: 48px;
     cursor: pointer;
+    font-family: var(--font-text);
+    transition: background var(--t-micro) var(--ease-out), color var(--t-micro) var(--ease-out), border-color var(--t-micro) var(--ease-out);
   }
 
   .btn--primary {
-    background: var(--text-primary);
-    color: var(--surface-page);
-    border: 1px solid var(--text-primary);
+    background: var(--stamp-fill);
+    color: var(--stamp-text);
+    border: var(--rule-width) solid var(--stamp-fill);
+  }
+  
+  .btn--primary:hover {
+    background: var(--stamp-fill-hover);
+    border-color: var(--stamp-fill-hover);
   }
 
   .btn--secondary {
     background: transparent;
     color: var(--text-primary);
-    border: 1px solid var(--text-primary);
+    border: var(--rule-width) solid var(--text-primary);
+  }
+  
+  .btn--secondary:hover {
+    background: var(--text-primary);
+    color: var(--surface-page);
   }
 
   .result-actions {
     text-align: center;
-    margin-top: var(--space-l);
+    margin-top: var(--space-m);
   }
 
   .btn-restart {
     background: transparent;
     border: none;
-    color: var(--text-secondary);
+    color: var(--text-tertiary);
     text-decoration: underline;
     cursor: pointer;
-    font-size: var(--step-0);
+    font-size: var(--step--1);
     padding: 8px;
     min-height: 44px;
+    transition: color var(--t-micro) var(--ease-out);
+    font-family: var(--font-text);
+  }
+  
+  .btn-restart:hover {
+    color: var(--text-primary);
   }
 
   /* Mobile horizontal swipe */
-  @media (max-width: 768px) {
+  @media (max-width: 700px) {
+    .find-mucca__interactive {
+      margin-inline: calc(var(--gutter) * -1);
+      padding-inline: var(--gutter);
+    }
+
     .find-mucca__options {
       flex-direction: row;
       overflow-x: auto;
@@ -617,6 +670,8 @@ const clientVenues = venues.map(v => ({
       padding-bottom: var(--space-m);
       scrollbar-width: none;
       -ms-overflow-style: none;
+      margin-inline: calc(var(--gutter) * -1);
+      padding-inline: var(--gutter);
     }
     
     .find-mucca__options::-webkit-scrollbar {
@@ -626,7 +681,7 @@ const clientVenues = venues.map(v => ({
     .option-card {
       flex: 0 0 85%;
       scroll-snap-align: center;
-      height: 120px;
+      height: 140px;
       justify-content: center;
       text-align: center;
     }
@@ -637,6 +692,14 @@ const clientVenues = venues.map(v => ({
     
     .btn {
       width: 100%;
+    }
+    
+    .find-mucca__result {
+      padding-inline: var(--gutter);
+    }
+    
+    .result-venue__content {
+      padding: var(--space-m);
     }
   }
 </style>

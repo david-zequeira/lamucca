@@ -1,0 +1,675 @@
+---
+/**
+ * CHAPTER 04 — LA MUCCA EN MADRID (the location experience)
+ *
+ * Desktop: a split-screen — a stylized district diagram on the left, an
+ * editorial story panel on the right that crossfades as you pick a marker.
+ * Mobile: the same data as a vertical scroll-snap stack of full cards.
+ *
+ * The map is deliberately not cartography. The content model only ever
+ * carries a `zone` enum (malasana/centro/chamberi/salamanca/norte/oeste/
+ * fuera) — no venue has a real lat/lng, and inventing one to plot on a real
+ * street map would be exactly the kind of fabricated specific this project
+ * refuses to ship (DESIGN-DECISIONS #006). So the districts are drawn as
+ * soft, labelled fields — a diagram of "which part of town", not "which
+ * street" — and every marker position inside its district is a deterministic
+ * scatter from the venue's own slug, not a claim about its real geography.
+ *
+ * Lamucca del Mar is the one casa with zone "fuera": it's in Palma, not
+ * Madrid, so a chapter titled "La Mucca está en Madrid" doesn't put it on
+ * the map or count it in "N sitios" — it gets its own honest, separate line.
+ */
+import { getCollection } from 'astro:content';
+import { getImage } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import type { CollectionEntry } from 'astro:content';
+
+const all = (await getCollection('restaurants')).sort((a, b) => a.data.order - b.data.order);
+const madrid = all.filter((v) => v.data.zone && v.data.zone !== 'fuera');
+const fuera = all.find((v) => v.data.zone === 'fuera');
+
+const fotos = import.meta.glob<{ default: ImageMetadata }>('../../assets/casas/*.jpg', {
+  eager: true,
+});
+
+const heroPorSlug = Object.fromEntries(
+  await Promise.all(
+    madrid.map(async (v) => {
+      const foto = fotos[`../../assets/casas/${v.data.slug}.jpg`]?.default;
+      if (!foto) return [v.data.slug, null];
+      const [avif, webp, jpg] = await Promise.all([
+        getImage({ src: foto, width: 1200, format: 'avif' }),
+        getImage({ src: foto, width: 1200, format: 'webp' }),
+        getImage({ src: foto, width: 1200, format: 'jpeg' }),
+      ]);
+      return [v.data.slug, { avif: avif.src, webp: webp.src, jpg: jpg.src }];
+    })
+  )
+);
+
+/* --- The district diagram --------------------------------------------------
+   Centres are hand-placed to roughly echo Madrid's real relative geography
+   (Malasaña/Centro sit together near the middle; Salamanca east; Chamberí
+   north; Norte and Oeste further out in their real directions) — general,
+   well-known city geography, not a specific claim about any address. */
+const ZONES: Record<string, { label: string; cx: number; cy: number; r: number }> = {
+  malasana: { label: 'Malasaña', cx: 34, cy: 46, r: 11 },
+  centro: { label: 'Centro', cx: 54, cy: 58, r: 10 },
+  chamberi: { label: 'Chamberí', cx: 46, cy: 28, r: 8 },
+  salamanca: { label: 'Salamanca', cx: 76, cy: 52, r: 8 },
+  norte: { label: 'Norte', cx: 66, cy: 12, r: 7 },
+  oeste: { label: 'Oeste', cx: 14, cy: 62, r: 7 },
+};
+
+/* A small deterministic hash of the slug — always the same layout on every
+   build and every visit, but not a mechanically even grid. */
+function hash(slug: string): number {
+  let h = 0;
+  for (let i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+const byZone = new Map<string, typeof madrid>();
+for (const v of madrid) {
+  const z = v.data.zone!;
+  if (!byZone.has(z)) byZone.set(z, []);
+  byZone.get(z)!.push(v);
+}
+
+/* Both the SVG district field and the HTML marker buttons are positioned in
+   the exact same flat 0–100 × 0–100 space (viewBox="0 0 100 100" below,
+   preserveAspectRatio="none") — so a marker's {x, y} needs no conversion
+   factor to land on top of its district, at any container aspect ratio. */
+const SPREAD = 8;
+const MIN_SEP = 4.5; /* percentage points — below this two pins visually
+  crowd each other on a diagram this small. Hash-based jitter alone
+  occasionally lands two venues within a point of each other by chance, so a
+  short relaxation pass runs after the initial scatter to guarantee real
+  separation. */
+const markerPos = new Map<string, { x: number; y: number }>();
+for (const [zoneKey, venues] of byZone) {
+  const zone = ZONES[zoneKey];
+  if (!zone || venues.length === 0) continue;
+  if (venues.length === 1) {
+    markerPos.set(venues[0].data.slug, { x: zone.cx, y: zone.cy });
+    continue;
+  }
+
+  const pts = venues.map((v, i) => {
+    const h = hash(v.data.slug);
+    const angle = (360 / venues.length) * i + (h % 20) - 10; // ±10° jitter
+    const radiusFrac = 0.65 + ((h >> 8) % 35) / 100; // 65–100% of SPREAD
+    const rad = (angle * Math.PI) / 180;
+    return {
+      slug: v.data.slug,
+      x: zone.cx + Math.cos(rad) * SPREAD * radiusFrac,
+      y: zone.cy + Math.sin(rad) * SPREAD * radiusFrac,
+    };
+  });
+
+  for (let pass = 0; pass < 12; pass++) {
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const dx = pts[j].x - pts[i].x;
+        const dy = pts[j].y - pts[i].y;
+        const dist = Math.hypot(dx, dy) || 0.001;
+        if (dist >= MIN_SEP) continue;
+        const push = (MIN_SEP - dist) / 2;
+        const ux = dx / dist;
+        const uy = dy / dist;
+        pts[i].x -= ux * push;
+        pts[i].y -= uy * push;
+        pts[j].x += ux * push;
+        pts[j].y += uy * push;
+      }
+    }
+  }
+
+  for (const p of pts) markerPos.set(p.slug, { x: p.x, y: p.y });
+}
+
+const clientVenues = madrid.map((v: CollectionEntry<'restaurants'>) => ({
+  slug: v.data.slug,
+  name: v.data.name,
+  tagline: v.data.tagline,
+  description: v.data.description,
+  neighborhood: v.data.neighborhood,
+  character: v.data.character ?? [],
+  zone: v.data.zone,
+  zoneLabel: ZONES[v.data.zone!]?.label ?? v.data.zone,
+  openedYear: v.data.openedYear ?? null,
+  accent: v.data.accent ?? 'tomato',
+  phone: v.data.phone ?? null,
+  bookingUrl: v.data.bookingUrl ?? null,
+  hero: heroPorSlug[v.data.slug],
+  pos: markerPos.get(v.data.slug) ?? { x: 50, y: 50 },
+}));
+
+const base = import.meta.env.BASE_URL;
+const n = madrid.length;
+const first = clientVenues[0];
+---
+
+<section class="mapa" id="mapa" aria-labelledby="mapa-title" data-mapa>
+  <div class="container">
+    <header class="capitulo-head" data-reveal>
+      <p class="capitulo-num label">Capítulo 04 — La Mucca en Madrid</p>
+      <h2 class="capitulo-title" id="mapa-title">
+        La Mucca está en <em>Madrid</em>.
+      </h2>
+      <p class="capitulo-sub">{n} sitios. {n} maneras de vivir la ciudad.</p>
+    </header>
+  </div>
+
+  <!-- ======================= DESKTOP: split-screen ======================= -->
+  <div class="mapa-split container" data-mapa-split>
+    <div class="mapa-map" data-mapa-map role="group" aria-label="Mapa de barrios de Madrid">
+      <svg
+        class="mapa-map__field"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+        focusable="false"
+      >
+        {Object.entries(ZONES).map(([key, z]) => (
+          <g class="mapa-district" data-district={key}>
+            <circle cx={z.cx} cy={z.cy} r={z.r} class="mapa-district__field" />
+            <text x={z.cx} y={z.cy - z.r - 1.5} class="mapa-district__label" text-anchor="middle">
+              {z.label}
+            </text>
+          </g>
+        ))}
+      </svg>
+
+      {clientVenues.map((v) => (
+        <button
+          type="button"
+          class={`mapa-pin mapa-pin--${v.accent}`}
+          data-pin={v.slug}
+          style={`left:${v.pos.x}%; top:${v.pos.y}%`}
+          aria-pressed={v.slug === first.slug ? 'true' : 'false'}
+        >
+          <span class="sr-only">{v.name}, {v.zoneLabel}</span>
+        </button>
+      ))}
+    </div>
+
+    <div class="mapa-panel" data-mapa-panel aria-live="polite">
+      <div class="mapa-panel__media">
+        <div class={`mapa-panel__layer is-active campo campo--${first.accent}`} data-layer="a">
+          {first.hero && (
+            <picture>
+              <source type="image/avif" srcset={first.hero.avif} />
+              <source type="image/webp" srcset={first.hero.webp} />
+              <img src={first.hero.jpg} alt={`Interior de ${first.name}`} decoding="async" fetchpriority="high" />
+            </picture>
+          )}
+        </div>
+        <div class="mapa-panel__layer campo" data-layer="b"></div>
+      </div>
+
+      <div class="mapa-panel__body">
+        <p class="mapa-panel__kicker label" data-panel-kicker>{first.zoneLabel}</p>
+        <h3 class="mapa-panel__name" data-panel-name>{first.name}</h3>
+        <p class="mapa-panel__tag voice" data-panel-tag>{first.tagline}</p>
+        <p class="mapa-panel__desc" data-panel-desc>{first.description}</p>
+        <div class="mapa-panel__actions" data-panel-actions>
+          <a class="btn btn--stamp" href={first.bookingUrl ?? `${base}restaurantes/${first.slug}/`} data-panel-book target={first.bookingUrl ? '_blank' : undefined} rel={first.bookingUrl ? 'noopener' : undefined}>
+            {first.bookingUrl ? 'Reservar mesa' : first.phone ? 'Llamar' : 'Ver disponibilidad'}
+          </a>
+          <a class="btn" href={`${base}#descubre`}>¿No sabes cuál? Encontrar mi sitio</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MOBILE: scroll-snap stack ====================== -->
+  <div class="mapa-stack" data-mapa-stack>
+    {clientVenues.map((v, i) => (
+      <article class="mapa-card" data-venue data-reveal style={`--reveal-delay: ${(i % 3) * 60}ms`}>
+        <a class={`mapa-card__image campo campo--${v.accent}`} href={`${base}restaurantes/${v.slug}/`}>
+          {v.hero && (
+            <picture>
+              <source type="image/avif" srcset={v.hero.avif} />
+              <source type="image/webp" srcset={v.hero.webp} />
+              <img src={v.hero.jpg} alt={`Interior de ${v.name}`} loading="lazy" decoding="async" />
+            </picture>
+          )}
+        </a>
+        <div class="mapa-card__body">
+          <p class="mapa-card__kicker label">{v.zoneLabel}</p>
+          <h3 class="mapa-card__name">
+            <a href={`${base}restaurantes/${v.slug}/`}>{v.name}</a>
+          </h3>
+          <p class="mapa-card__tag voice">{v.tagline}</p>
+          <p class="mapa-card__desc">{v.description}</p>
+          <div class="mapa-card__actions">
+            {v.bookingUrl ? (
+              <a class="btn btn--stamp" href={v.bookingUrl} target="_blank" rel="noopener">Reservar mesa</a>
+            ) : v.phone ? (
+              <a class="btn btn--stamp" href={`tel:+34${v.phone}`}>Llamar</a>
+            ) : (
+              <a class="btn btn--stamp" href={`${base}restaurantes/${v.slug}/`}>Ver disponibilidad</a>
+            )}
+            <a class="btn" href={`${base}#descubre`}>Encontrar mi sitio</a>
+          </div>
+        </div>
+      </article>
+    ))}
+  </div>
+
+  {fuera && (
+    <p class="mapa-fuera container" data-reveal>
+      Y cruzando el mar, en Palma:&#32;
+      <a href={`${base}restaurantes/${fuera.data.slug}/`}>{fuera.data.name}</a>.
+    </p>
+  )}
+
+  <script is:inline define:vars={{ venuesData: clientVenues, baseUrl: base }}>
+    window.lamuccaMapaVenues = venuesData;
+    window.lamuccaMapaBase = baseUrl;
+  </script>
+
+  <script>
+    const root = document.querySelector<HTMLElement>('[data-mapa]');
+    const venues = (window as any).lamuccaMapaVenues as any[] | undefined;
+    const base = (window as any).lamuccaMapaBase as string | undefined;
+
+    if (root && venues && base !== undefined) {
+      const mapEl = root.querySelector<HTMLElement>('[data-mapa-map]')!;
+      const panel = root.querySelector<HTMLElement>('[data-mapa-panel]')!;
+      const pins = Array.from(mapEl.querySelectorAll<HTMLButtonElement>('[data-pin]'));
+      const layers = Array.from(panel.querySelectorAll<HTMLElement>('.mapa-panel__layer'));
+      const kicker = panel.querySelector<HTMLElement>('[data-panel-kicker]')!;
+      const nameEl = panel.querySelector<HTMLElement>('[data-panel-name]')!;
+      const tagEl = panel.querySelector<HTMLElement>('[data-panel-tag]')!;
+      const descEl = panel.querySelector<HTMLElement>('[data-panel-desc]')!;
+      const actionsEl = panel.querySelector<HTMLElement>('[data-panel-actions]')!;
+      const bookLink = panel.querySelector<HTMLAnchorElement>('[data-panel-book]')!;
+
+      const bySlug = new Map(venues.map((v) => [v.slug, v]));
+      const order = venues.map((v) => v.slug);
+      let activeSlug = order[0];
+      let busy = false;
+
+      const EASE_OUT = 'cubic-bezier(0.22, 1, 0.36, 1)';
+
+      function reducedMotion() {
+        return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      }
+
+      function silence<T extends Animation>(anim: T): T {
+        anim.finished.catch(() => {});
+        return anim;
+      }
+
+      /* --- Windowed image loading: only current + its neighbours in venue
+         order ever get a real <img> src. Neighbours are warmed with a plain
+         Image() prefetch (no DOM, just primes the HTTP cache) so the very
+         next/previous crossfade never has to wait on the network. --- */
+      const warmed = new Set<string>();
+      function warm(slug: string | undefined) {
+        if (!slug || warmed.has(slug)) return;
+        const v = bySlug.get(slug);
+        if (!v?.hero) return;
+        warmed.add(slug);
+        const img = new Image();
+        img.src = v.hero.jpg;
+      }
+      function warmNeighbours(slug: string) {
+        const i = order.indexOf(slug);
+        if (i === -1) return;
+        warm(order[(i + 1) % order.length]);
+        warm(order[(i - 1 + order.length) % order.length]);
+      }
+
+      function pictureMarkup(v: any) {
+        if (!v.hero) return '';
+        return `<picture>
+          <source type="image/avif" srcset="${v.hero.avif}" />
+          <source type="image/webp" srcset="${v.hero.webp}" />
+          <img src="${v.hero.jpg}" alt="Interior de ${v.name}" decoding="async" />
+        </picture>`;
+      }
+
+      async function select(slug: string, { fromPin }: { fromPin?: HTMLButtonElement } = {}) {
+        if (busy || slug === activeSlug) return;
+        const v = bySlug.get(slug);
+        if (!v) return;
+        busy = true;
+        activeSlug = slug;
+
+        pins.forEach((p) => p.setAttribute('aria-pressed', String(p.dataset.pin === slug)));
+        const pin = fromPin ?? pins.find((p) => p.dataset.pin === slug);
+        if (pin && !reducedMotion()) {
+          silence(
+            pin.animate([{ scale: 0.9 }, { scale: 1.1 }, { scale: 1 }], { duration: 380, easing: EASE_OUT })
+          );
+        }
+
+        /* Crossfade: write the new picture into the currently-inactive
+           layer, then swap which layer is on top. Two persistent nodes,
+           never rebuilt — only their innerHTML/class is ever touched. */
+        const active = layers.find((l) => l.classList.contains('is-active'))!;
+        const nextLayer = layers.find((l) => l !== active)!;
+        nextLayer.className = `mapa-panel__layer campo campo--${v.accent}`;
+        nextLayer.innerHTML = pictureMarkup(v);
+
+        if (reducedMotion()) {
+          active.classList.remove('is-active');
+          nextLayer.classList.add('is-active');
+        } else {
+          const fadeOut = silence(active.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, easing: EASE_OUT, fill: 'forwards' }));
+          const fadeIn = silence(nextLayer.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 400, easing: EASE_OUT, fill: 'forwards' }));
+          await Promise.race([
+            Promise.all([fadeOut.finished, fadeIn.finished]),
+            new Promise((r) => setTimeout(r, 600)),
+          ]);
+          active.classList.remove('is-active');
+          nextLayer.classList.add('is-active');
+        }
+
+        /* Text: update content, then replay the entrance stagger. Only
+           name/neighbourhood/description/CTA — never per-letter. */
+        kicker.textContent = v.zoneLabel;
+        nameEl.textContent = v.name;
+        tagEl.textContent = v.tagline;
+        descEl.textContent = v.description;
+        bookLink.textContent = v.bookingUrl ? 'Reservar mesa' : v.phone ? 'Llamar' : 'Ver disponibilidad';
+        bookLink.href = v.bookingUrl ?? (v.phone ? `tel:+34${v.phone}` : `${base}restaurantes/${v.slug}/`);
+        if (v.bookingUrl) {
+          bookLink.target = '_blank';
+          bookLink.rel = 'noopener';
+        } else {
+          bookLink.removeAttribute('target');
+          bookLink.removeAttribute('rel');
+        }
+
+        if (!reducedMotion()) {
+          const stagger = [kicker, nameEl, tagEl, descEl, actionsEl];
+          stagger.forEach((el, i) => {
+            silence(
+              el.animate(
+                [
+                  { opacity: 0, transform: 'translateY(16px)' },
+                  { opacity: 1, transform: 'translateY(0)' },
+                ],
+                { duration: 380, delay: i * 50, easing: EASE_OUT, fill: 'both' }
+              )
+            );
+          });
+        }
+
+        warmNeighbours(slug);
+        busy = false;
+      }
+
+      pins.forEach((pin) => {
+        pin.addEventListener('click', () => select(pin.dataset.pin!, { fromPin: pin }));
+      });
+
+      warmNeighbours(activeSlug);
+    }
+  </script>
+</section>
+
+<style>
+  .mapa {
+    padding-block: var(--space-3xl) var(--space-2xl);
+  }
+
+  .capitulo-title em {
+    font-style: italic;
+    color: var(--text-accent);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* ---------------------------------------------------------------------
+     DESKTOP: split-screen (hidden below 900px)
+     --------------------------------------------------------------------- */
+  .mapa-split {
+    display: none;
+  }
+
+  /* ---------------------------------------------------------------------
+     MOBILE: scroll-snap stack (the default; hidden at 900px+)
+     --------------------------------------------------------------------- */
+  .mapa-stack {
+    display: grid;
+    gap: var(--space-l);
+    padding-inline: var(--gutter);
+    margin-top: var(--space-xl);
+    scroll-snap-type: y proximity;
+  }
+
+  .mapa-card {
+    scroll-snap-align: start;
+    display: grid;
+    border: var(--rule);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    background: var(--surface-page);
+  }
+
+  :global(.mapa-card__image) {
+    display: block;
+    --campo-ratio: 4 / 3;
+  }
+
+  .mapa-card__body {
+    padding: var(--space-l);
+    display: grid;
+    gap: var(--space-2xs);
+  }
+
+  .mapa-card__kicker {
+    color: var(--text-accent);
+  }
+
+  .mapa-card__name {
+    font-size: var(--step-2);
+    line-height: var(--leading-card);
+  }
+
+  .mapa-card__name a {
+    text-decoration: none;
+  }
+
+  .mapa-card__tag {
+    color: var(--text-secondary);
+  }
+
+  .mapa-card__desc {
+    margin-top: var(--space-2xs);
+    color: var(--text-secondary);
+    max-width: 60ch;
+  }
+
+  .mapa-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-s);
+    margin-top: var(--space-m);
+  }
+
+  .mapa-fuera {
+    margin-top: var(--space-xl);
+    color: var(--text-tertiary);
+    font-size: var(--step-0);
+  }
+
+  @media (min-width: 900px) {
+    .mapa-stack,
+    .mapa-fuera {
+      display: none;
+    }
+
+    .mapa-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2xl);
+      align-items: stretch;
+      margin-top: var(--space-2xl);
+      min-height: 34rem;
+    }
+
+    /* --- The district diagram --- */
+    .mapa-map {
+      position: relative;
+      border: var(--rule);
+      border-radius: var(--radius-card);
+      background: var(--surface-raised);
+      overflow: hidden;
+    }
+
+    .mapa-map__field {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .mapa-district__field {
+      fill: var(--line);
+      opacity: 0.5;
+    }
+
+    .mapa-district__label {
+      font-family: var(--font-text);
+      font-size: 2.4px;
+      font-weight: var(--weight-label);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      fill: var(--text-tertiary);
+    }
+
+    .mapa-pin {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      width: 18px;
+      height: 18px;
+      min-width: 18px;
+      min-height: 18px;
+      padding: 13px; /* visual dot stays small; hit target grows to 44px */
+      margin: -13px;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .mapa-pin::before {
+      content: '';
+      position: absolute;
+      inset: 13px;
+      border-radius: 50%;
+      background: var(--pin-ink, var(--tomato));
+      border: 2px solid var(--paper);
+      box-shadow: 0 1px 3px rgb(32 27 22 / 0.35);
+      transition: transform var(--t-micro) var(--ease-out);
+    }
+
+    .mapa-pin--tomato { --pin-ink: var(--tomato); }
+    .mapa-pin--butter { --pin-ink: var(--butter); }
+    .mapa-pin--olive { --pin-ink: var(--olive); }
+
+    .mapa-pin:hover::before {
+      transform: scale(1.15);
+    }
+
+    .mapa-pin:focus-visible {
+      outline: 2px solid var(--text-accent);
+      outline-offset: 2px;
+      border-radius: 50%;
+    }
+
+    .mapa-pin[aria-pressed='true']::before {
+      transform: scale(1.35);
+      box-shadow: 0 2px 6px rgb(32 27 22 / 0.4);
+    }
+
+    /* --- The story panel --- */
+    .mapa-panel {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      border: var(--rule);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      background: var(--surface-page);
+      box-shadow: var(--shadow-print);
+    }
+
+    .mapa-panel__media {
+      position: relative;
+      --campo-ratio: 16 / 10;
+    }
+
+    :global(.mapa-panel__layer) {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    :global(.mapa-panel__layer.is-active) {
+      position: relative;
+      opacity: 1;
+    }
+
+    :global(.mapa-panel__layer img),
+    :global(.mapa-panel__layer picture) {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .mapa-panel__body {
+      padding: var(--space-xl);
+      display: grid;
+      align-content: start;
+      gap: var(--space-2xs);
+    }
+
+    .mapa-panel__kicker {
+      color: var(--text-accent);
+    }
+
+    .mapa-panel__name {
+      font-size: var(--step-3);
+      line-height: var(--leading-card);
+    }
+
+    .mapa-panel__tag {
+      color: var(--text-secondary);
+      font-size: var(--step-1);
+    }
+
+    .mapa-panel__desc {
+      margin-top: var(--space-xs);
+      color: var(--text-secondary);
+      max-width: 52ch;
+    }
+
+    .mapa-panel__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-s);
+      margin-top: var(--space-l);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mapa-pin::before {
+      transition: none;
+    }
+  }
+</style>

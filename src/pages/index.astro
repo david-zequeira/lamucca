@@ -6,13 +6,14 @@ import Teletipo from '../components/Teletipo.astro';
 import Ch01Hero from '../components/home/Ch01Hero.astro';
 import Ch02Mundo from '../components/home/Ch02Mundo.astro';
 import Ch03Madrid from '../components/home/Ch03Madrid.astro';
-import Ch04Descubre from '../components/home/Ch04Descubre.astro';
-import Ch05Comida from '../components/home/Ch05Comida.astro';
-import Ch06Muckeros from '../components/home/Ch06Muckeros.astro';
-import Ch07Reserva from '../components/home/Ch07Reserva.astro';
+import Ch04MadridMapa from '../components/home/Ch04MadridMapa.astro';
+import Ch05Descubre from '../components/home/Ch05Descubre.astro';
+import Ch06Comida from '../components/home/Ch06Comida.astro';
+import Ch07Muckeros from '../components/home/Ch07Muckeros.astro';
+import Ch08Reserva from '../components/home/Ch08Reserva.astro';
 
-/* The seven chapters — see docs/strategy/information-architecture.md Part III.
-   Arrival → world → city → choice → food → people → invitation. */
+/* The eight chapters — see docs/strategy/information-architecture.md Part III.
+   Arrival → world → city → map → choice → food → people → invitation. */
 ---
 
 <Base
@@ -39,8 +40,9 @@ import Ch07Reserva from '../components/home/Ch07Reserva.astro';
 
     <Ch02Mundo />
     <Ch03Madrid />
-    <Ch04Descubre />
-    <Ch05Comida />
+    <Ch04MadridMapa />
+    <Ch05Descubre />
+    <Ch06Comida />
 
     <Teletipo
       items={[
@@ -54,8 +56,8 @@ import Ch07Reserva from '../components/home/Ch07Reserva.astro';
       ]}
     />
 
-    <Ch06Muckeros />
-    <Ch07Reserva />
+    <Ch07Muckeros />
+    <Ch08Reserva />
   </main>
 
   <Footer />

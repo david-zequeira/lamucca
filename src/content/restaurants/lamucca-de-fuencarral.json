@@ -6,11 +6,11 @@
   "address": "Calle Fuencarral 95, 28004 Madrid",
   "city": "Madrid",
   "tagline": "Organik ⚡ Parriya",
-  "description": "El primer Organik Parriya del grupo: parrilla y producto orgánico. De día, café de especialidad y espacio de coworking; siempre pet friendly. La casa que vive al ritmo de Fuencarral.",
+  "description": "El primer Organik Parriya del grupo: parrilla y producto orgánico. De día, café de especialidad y mesas para trabajar con el portátil; los perros, siempre bienvenidos. La casa que vive al ritmo de Fuencarral.",
   "character": [
     "Parrilla orgánica",
-    "Coworking de día",
-    "Pet friendly"
+    "De día se trabaja aquí",
+    "Perros bienvenidos"
   ],
   "phone": "915210000",
   "bookingUrl": "https://www.covermanager.com/reservation/module_restaurant/restaurante-lamuccadefuencarral/spanish",
@@ -39,8 +39,8 @@
     "pocos"
   ],
   "features": [
-    "Pet friendly",
+    "Perros bienvenidos",
     "Parrilla orgánica",
-    "Coworking"
+    "Mesas para trabajar"
   ]
 }

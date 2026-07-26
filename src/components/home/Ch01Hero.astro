@@ -1,93 +1,127 @@
 ---
 /**
- * CHAPTER 01 — LA PUERTA
- * The arrival. Identity and promise in five seconds; routes the two big intents.
- * Communicates: Lamucca · Madrid · comida · energía · humanidad.
+ * CHAPTER 01 — LA PORTADA (cinematic hero)
+ *
+ * The video is a storytelling layer, not wallpaper: a five-shot Madrid montage
+ * (Gran Vía at dusk → the street → the comedor → la pizza → la mesa) that earns
+ * the headline sitting on top of it.
+ *
+ * Load order is deliberate, and matches the entrance choreography:
+ *   1. The poster still paints from CSS — it is the LCP element and needs no JS.
+ *   2. Type and CTAs print over it on a pure-CSS timeline (0 → 1600ms).
+ *   3. Only once the page has finished loading does the video fetch and fade in.
+ * So the video never competes with LCP, and a visitor without JS, on a metered
+ * connection, or with reduced motion still gets the whole composition — just
+ * held on its opening frame.
  */
+import { getCollection } from 'astro:content';
+
+const casas = await getCollection('restaurants');
+/* Counted, never hard-coded: the headline cannot drift from the casas actually
+   published (DESIGN-DECISIONS #006 — content honesty). */
+const nCasas = casas.length;
+
+const base = import.meta.env.BASE_URL;
 ---
 
-<section class="hero" id="portada" aria-labelledby="hero-title" data-ink>
-  <!-- Cinematic Full-Bleed Background -->
-  <div class="hero__bg">
-    <video 
+<section class="hero" id="portada" aria-labelledby="hero-title" data-ink data-hero>
+  <div
+    class="hero__media"
+    data-hero-media
+    style={`--poster-mobile:url('${base}assets/hero-poster-mobile.webp');--poster-desktop:url('${base}assets/hero-poster.webp')`}
+  >
+    {/* No src: the script assigns one after load, picking the composition that
+        fits the viewport so a phone never downloads the 16:9 cut. */}
+    <video
       class="hero__video"
-      autoplay 
-      muted 
-      loop 
-      playsinline 
-      fetchpriority="high"
+      data-hero-video
+      data-src-desktop={`${base}assets/hero-desktop.mp4`}
+      data-src-mobile={`${base}assets/hero-mobile.mp4`}
+      autoplay
+      muted
+      loop
+      playsinline
+      preload="metadata"
       disableRemotePlayback
       aria-hidden="true"
-    >
-      <source src={`${import.meta.env.BASE_URL}assets/hero-runway.mp4`} type="video/mp4" />
-    </video>
-    <div class="hero__overlay"></div>
+      tabindex="-1"
+    ></video>
+    <span class="hero__scrim" aria-hidden="true"></span>
     <span class="marcas" aria-hidden="true"></span>
   </div>
 
-  <div class="container hero__content">
-    <div class="hero__text">
-      <!-- WOW 1 «La tirada» -->
-      <p class="cabecera label">
-        <span class="cabecera__rule" aria-hidden="true" data-print="rule"></span>
-        <span data-print="rise" style="--print-delay: 120ms">
-          Grupo de restaurantes · Madrid · desde 2008
-        </span>
-      </p>
+  <div class="container hero__content" data-hero-content>
+    <p class="hero__kicker label">
+      <span class="hero__kicker-rule" aria-hidden="true"></span>
+      Madrid · desde 2008
+    </p>
 
-      <h1 class="hero__title" id="hero-title">
-        <span class="hero__line" data-print="line" style="--print-delay: 220ms">
-          High en producto,
-        </span>&#32;
-        <span class="hero__line" data-print="line" style="--print-delay: 380ms">
-          <em class="voice">low</em> en pretensión.
-        </span>
-      </h1>
+    <h1 class="hero__title" id="hero-title">
+      <span class="hero__line">{nCasas} restaurantes.</span>
+      <span class="hero__line">Una gran mesa.</span>
+    </h1>
 
-      <p class="hero__lead" data-print="rise" style="--print-delay: 620ms">
-        Dieciocho casas por Madrid con la cocina abierta todo el día, mesas que se
-        alargan y música que no baja.&#32;
-        <em class="voice">Your friendly neighborhood place.</em>
-      </p>
+    <p class="hero__lead">Encuentra tu sitio en Madrid.</p>
 
-      <div class="hero__actions">
-        <a href="#reserva" class="btn btn--stamp" data-print="sello" style="--print-delay: 900ms">
-          Reservar mesa
-        </a>
-        <a href="#descubre" class="btn btn--outline" data-print="rise" style="--print-delay: 980ms">
-          ¿Cuál te toca hoy?
-        </a>
-      </div>
+    <div class="hero__actions">
+      <a href={`${base}#reserva`} class="btn btn--stamp hero__cta hero__cta--first">
+        Reservar mesa
+      </a>
+      <a href={`${base}#descubre`} class="btn btn--outline hero__cta hero__cta--second">
+        Descubrir La Mucca
+      </a>
+    </div>
 
-      <div class="hero__footer" data-print="rise" style="--print-delay: 1100ms">
-        <p class="hero__edicion label" data-edition-line>
-          Cocina abierta todo el día
-        </p>
-        <p class="hero__caption label">
-          Lamucca de Pez · Malasaña · la primera casa, 2008
-        </p>
-      </div>
+    <div class="hero__foot">
+      <span class="hero__edicion label" data-edition-line>Cocina abierta todo el día</span>
+
+      {/* WCAG 2.2.2 — moving content over 5s needs a pause control. It sits in
+          the content flow rather than pinned to a corner, where it would land
+          on top of the Concierge button. Revealed only once the video is
+          really playing; there is nothing to pause before that. */}
+      <button class="hero__toggle" type="button" data-hero-toggle hidden>
+        <svg class="hero__toggle-icon" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true">
+          <rect class="hero__toggle-pause" x="3" y="2.5" width="3.5" height="11" rx="1" fill="currentColor" />
+          <rect class="hero__toggle-pause" x="9.5" y="2.5" width="3.5" height="11" rx="1" fill="currentColor" />
+          <path class="hero__toggle-play" d="M4 2.5 13.5 8 4 13.5Z" fill="currentColor" />
+        </svg>
+        <span data-hero-toggle-label>Pausar</span>
+      </button>
     </div>
   </div>
 </section>
 
 <style>
+  /* ---------------------------------------------------------------------
+     1. STAGE
+     --------------------------------------------------------------------- */
   .hero {
     position: relative;
     min-height: 100svh;
     display: flex;
-    align-items: center;
-    padding-block: calc(var(--nav-height-lg) + var(--space-xl)) var(--space-2xl);
-    overflow-x: clip;
-    overflow-y: visible;
+    align-items: flex-end;
+    padding-block: calc(var(--nav-height-lg) + var(--space-l)) var(--space-2xl);
+    /* clip, never hidden: `hidden` would make the hero a scroll container and
+       silently break the named view-timeline declared just below. */
+    overflow: clip;
+    isolation: isolate;
+    /* The one timeline both children read, so they leave in step. */
+    view-timeline-name: --hero;
+    view-timeline-axis: block;
   }
 
-  /* --- Cinematic Background --- */
-  .hero__bg {
+  .hero__media {
     position: absolute;
     inset: 0;
     z-index: 0;
-    background: var(--ink);
+    background-color: var(--ink);
+    /* The poster is a CSS background rather than [poster]: it paints without
+       JS, is preloaded in Base.astro, and survives the video never loading. */
+    background-image: var(--poster-mobile);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transform-origin: 50% 40%;
   }
 
   .hero__video {
@@ -95,89 +129,96 @@
     height: 100%;
     object-fit: cover;
     opacity: 0;
-    animation: cinematic-fade-in 2s var(--ease-out) forwards;
-    animation-delay: 400ms;
+    transition: opacity 1200ms var(--ease-out);
   }
 
-  .hero__overlay {
+  .hero.is-playing .hero__video {
+    opacity: 1;
+  }
+
+  .hero__scrim {
     position: absolute;
     inset: 0;
-    /* Left + bottom wash so copy stays readable over busy footage */
+    /* Weighted to the left column, not just the bottom: the montage cuts
+       between a night street and a bright lunch table every three seconds, so
+       the type needs a floor that holds in the brightest shot, wherever the
+       copy sits. Measured worst-case across all five shots, not eyeballed —
+       AA for large text is 3:1 and the title is the exposed one.
+       Right side stays open so Madrid still reads as the subject. */
     background:
       linear-gradient(
         to right,
-        rgba(32, 27, 22, 0.72) 0%,
-        rgba(32, 27, 22, 0.35) 42%,
-        rgba(32, 27, 22, 0.08) 68%,
-        transparent 100%
+        rgb(24 20 16 / 0.75) 0%,
+        rgb(24 20 16 / 0.58) 32%,
+        rgb(24 20 16 / 0.3) 62%,
+        rgb(24 20 16 / 0.1) 85%,
+        rgb(24 20 16 / 0.02) 100%
       ),
       linear-gradient(
-        to bottom,
-        rgba(32, 27, 22, 0.2) 0%,
-        rgba(32, 27, 22, 0.12) 38%,
-        rgba(32, 27, 22, 0.72) 100%
-      );
+        to top,
+        rgb(24 20 16 / 0.8) 0%,
+        rgb(24 20 16 / 0.42) 28%,
+        rgb(24 20 16 / 0.16) 58%,
+        rgb(24 20 16 / 0.1) 80%,
+        rgb(24 20 16 / 0.26) 100%
+      ),
+      /* A flat grade underneath the two ramps. The headline runs most of the
+         way across the frame, so the left-hand ramp alone could only rescue it
+         by turning into a black panel. Spreading part of the load evenly reads
+         as a colour grade instead, and still clears 3:1 on the brightest
+         frame — the lunch table at ~10s. */
+      linear-gradient(rgb(24 20 16 / 0.32), rgb(24 20 16 / 0.32));
   }
 
-  @keyframes cinematic-fade-in {
-    from { opacity: 0; transform: scale(1.05); }
-    to { opacity: 1; transform: scale(1); }
-  }
-
-  /* --- Content --- */
   .hero__content {
     position: relative;
     z-index: 1;
-    /* width lo marca .container — no forzar 100% o se come el gutter */
+    width: 100%;
   }
 
-  .hero__text {
-    max-width: 40rem;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .cabecera {
+  /* ---------------------------------------------------------------------
+     2. TYPE
+     --------------------------------------------------------------------- */
+  .hero__kicker {
     display: flex;
     align-items: center;
     gap: var(--space-xs);
-    color: var(--text-accent);
-    margin: 0 0 var(--space-m);
+    margin: 0 0 var(--space-s);
     font-size: var(--step--1);
+    color: var(--text-accent);
   }
 
-  .cabecera__rule {
+  .hero__kicker-rule {
     width: 1.5rem;
     height: var(--rule-width);
     background: currentColor;
     flex: none;
+    transform-origin: left center;
   }
 
   .hero__title {
-    font-size: clamp(1.875rem, 4.2vw, 2.75rem);
-    line-height: 1.08;
-    letter-spacing: var(--track-display);
-    color: var(--text-primary);
     margin: 0;
-    max-width: 18ch;
+    max-width: 15ch;
+    font-size: clamp(2.25rem, 8.2vw, 5rem);
+    line-height: 1.02;
+    letter-spacing: var(--track-display);
+    /* Set in sentence case and uppercased here, so screen readers still get a
+       word rather than an initialism. */
+    text-transform: uppercase;
     text-wrap: balance;
+    color: var(--text-primary);
   }
 
   .hero__line {
     display: block;
   }
 
-  .hero__line em {
-    color: var(--text-accent);
-  }
-
   .hero__lead {
     margin: var(--space-m) 0 0;
-    font-size: var(--step-0);
-    line-height: 1.55;
+    max-width: 32ch;
+    font-size: var(--step-1);
+    line-height: 1.5;
     color: var(--text-secondary);
-    max-width: 36ch;
     text-wrap: pretty;
   }
 
@@ -186,12 +227,12 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-s);
-    margin: var(--space-l) 0 0;
+    margin-top: var(--space-l);
   }
 
-  .hero__actions .btn {
-    font-size: var(--step--1);
+  .hero__cta {
     min-height: 48px;
+    font-size: var(--step--1);
     padding: 0.75em 1.5em;
   }
 
@@ -202,69 +243,350 @@
   }
 
   .btn--outline:hover {
-    border-color: var(--paper);
     background: var(--paper);
+    border-color: var(--paper);
     color: var(--ink);
   }
 
-  .hero__footer {
+  .hero__foot {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-2xs);
-    margin: var(--space-xl) 0 0;
-    padding: var(--space-s) 0 0;
-    border-top: 1px solid color-mix(in srgb, var(--paper) 18%, transparent);
-    width: 100%;
-    max-width: 36rem;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-s);
+    margin-top: var(--space-l);
   }
 
-  .hero__edicion,
-  .hero__caption {
-    color: var(--text-tertiary);
-    font-size: var(--step--1);
+  .hero__edicion {
     margin: 0;
-    line-height: 1.4;
+    font-size: var(--step--1);
+    color: var(--text-tertiary);
   }
 
-  @media (max-width: 899px) {
+  /* ---------------------------------------------------------------------
+     3. PAUSE CONTROL
+     --------------------------------------------------------------------- */
+  .hero__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    min-height: 44px;
+    padding: 0.4em 0.9em;
+    border: var(--rule-width) solid color-mix(in srgb, var(--paper) 30%, transparent);
+    border-radius: 999px;
+    background: rgb(24 20 16 / 0.35);
+    color: color-mix(in srgb, var(--paper) 68%, transparent);
+    font-family: var(--font-text);
+    font-size: var(--step--1);
+    font-weight: var(--weight-label);
+    letter-spacing: var(--track-label);
+    text-transform: uppercase;
+    cursor: pointer;
+    /* Opacity is driven by .is-playing, never by an animation: a filled
+       animation would outrank the hover rule and pin the control. */
+    opacity: 0;
+    transition:
+      opacity 500ms var(--ease-out),
+      color var(--t-micro) var(--ease-out),
+      border-color var(--t-micro) var(--ease-out);
+  }
+
+  .hero.is-playing .hero__toggle {
+    opacity: 1;
+  }
+
+  .hero__toggle:hover,
+  .hero__toggle:focus-visible {
+    color: var(--paper);
+    border-color: var(--paper);
+  }
+
+  .hero__toggle[hidden] {
+    display: none;
+  }
+
+  /* Pause glyph while playing, play glyph once paused */
+  .hero__toggle-play {
+    display: none;
+  }
+
+  .hero.is-paused .hero__toggle-pause {
+    display: none;
+  }
+
+  .hero.is-paused .hero__toggle-play {
+    display: inline;
+  }
+
+  /* ---------------------------------------------------------------------
+     4. ENTRANCE — pure CSS, so it runs even if the JS bundle never arrives.
+        PHASE 01  0–800ms    nav + kicker over the still frame (nav: Nav.astro)
+        PHASE 02  400–1400ms headline, animated per block — never per letter
+        PHASE 03  900–1600ms CTAs
+        PHASE 04  after load video fades in and drifts 1.02 → 1
+     --------------------------------------------------------------------- */
+  @keyframes hero-rise {
+    from { opacity: 0; translate: 0 14px; }
+    to   { opacity: 1; translate: none; }
+  }
+
+  @keyframes hero-block {
+    from { opacity: 0; translate: 0 24px; filter: blur(8px); }
+    to   { opacity: 1; translate: none; filter: blur(0); }
+  }
+
+  @keyframes hero-rule {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+
+  @keyframes hero-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* Almost imperceptible: 2% across 20s. Presence, not a zoom. */
+  @keyframes hero-ambient {
+    from { transform: scale(1.02); }
+    to   { transform: scale(1); }
+  }
+
+  /* These animate `translate`, not `transform`, so .btn--stamp keeps its own
+     `rotate` and its hover `transform` instead of being pinned by fill-mode. */
+  .hero__kicker-rule { animation: hero-rule 600ms var(--ease-out) 200ms both; }
+  .hero__kicker      { animation: hero-rise 700ms var(--ease-out) 250ms both; }
+
+  .hero__line:nth-child(1) { animation: hero-block 860ms var(--ease-out) 400ms both; }
+  .hero__line:nth-child(2) { animation: hero-block 860ms var(--ease-out) 540ms both; }
+
+  .hero__lead        { animation: hero-rise 700ms var(--ease-out) 800ms both; }
+  .hero__cta--first  { animation: hero-rise 600ms var(--ease-out) 900ms both; }
+  .hero__cta--second { animation: hero-rise 600ms var(--ease-out) 1000ms both; }
+  .hero__foot        { animation: hero-rise 700ms var(--ease-out) 1150ms both; }
+
+  .hero.is-playing .hero__video {
+    animation: hero-ambient 20s linear both;
+  }
+
+  .hero.is-paused .hero__video {
+    animation-play-state: paused;
+  }
+
+  /* ---------------------------------------------------------------------
+     5. LEAVING — the hero is left behind, on the compositor.
+        Both children read the hero's own view-timeline, so they stay in step
+        whatever their own height. No scroll listener, no rAF.
+     --------------------------------------------------------------------- */
+  @keyframes hero-leave-content {
+    to { opacity: 0; transform: translate3d(0, -64px, 0); }
+  }
+
+  @keyframes hero-leave-media {
+    to { transform: scale(0.94); }
+  }
+
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .hero__content {
+        animation: hero-leave-content linear both;
+        animation-timeline: --hero;
+        /* `exit` on a full-height hero at the top of the document maps exactly
+           to scroll 0 → one viewport. Content clears before the media does. */
+        animation-range: exit 0% exit 70%;
+      }
+
+      .hero__media {
+        animation: hero-leave-media linear both;
+        animation-timeline: --hero;
+        animation-range: exit 0% exit 100%;
+      }
+    }
+  }
+
+  /* ---------------------------------------------------------------------
+     6. RESPONSIVE
+     --------------------------------------------------------------------- */
+  @media (min-width: 900px) {
     .hero {
-      min-height: 100dvh;
-      padding-block: calc(var(--nav-height) + var(--space-m))
-        calc(var(--space-xl) + var(--reserve-bar-height) + env(safe-area-inset-bottom));
-      align-items: flex-end;
+      align-items: center;
+      padding-block: calc(var(--nav-height-lg) + var(--space-2xl)) var(--space-3xl);
+    }
+
+    .hero__media {
+      background-image: var(--poster-desktop);
     }
 
     .hero__title {
-      max-width: 12ch;
-      font-size: clamp(1.75rem, 8.5vw, 2.35rem);
+      font-size: clamp(3rem, 5.6vw, 5.5rem);
     }
 
     .hero__lead {
-      max-width: 34ch;
-      font-size: var(--step-0);
-    }
-
-    .hero__actions {
-      flex-direction: column;
-      align-items: stretch;
-      width: 100%;
-      gap: var(--space-s);
-    }
-
-    .hero__actions .btn {
-      width: 100%;
-    }
-
-    .hero__footer {
-      margin-top: var(--space-l);
+      font-size: var(--step-2);
     }
   }
 
-  @media (min-width: 900px) {
-    .hero__title {
-      font-size: clamp(2.25rem, 3.6vw, 3rem);
-      line-height: 1.06;
+  /* ---------------------------------------------------------------------
+     7. REDUCED MOTION — the page is simply already printed.
+        No drift, no parallax, no autoplay: opacity only.
+     --------------------------------------------------------------------- */
+  @media (prefers-reduced-motion: reduce) {
+    .hero__kicker,
+    .hero__line,
+    .hero__lead,
+    .hero__cta,
+    .hero__foot {
+      animation: hero-fade 400ms var(--ease-out) both;
+    }
+
+    .hero__kicker-rule,
+    .hero.is-playing .hero__video {
+      animation: none;
+    }
+
+    .hero__video {
+      transition: opacity 200ms linear;
     }
   }
 </style>
+
+<script>
+  /* Vanilla and self-contained — the motion system's default. CSS owns every
+     transition here; this only decides *when* the video exists. */
+  const hero = document.querySelector<HTMLElement>('[data-hero]');
+  const video = hero?.querySelector<HTMLVideoElement>('[data-hero-video]');
+  const toggle = hero?.querySelector<HTMLButtonElement>('[data-hero-toggle]');
+
+  if (hero && video) {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const toggleLabel = toggle?.querySelector('[data-hero-toggle-label]');
+
+    /* Only ever called once the video really exists, so the control can never
+       advertise a state the element is not actually in. */
+    const syncToggle = () => {
+      if (!toggle) return;
+      const paused = video.paused;
+      hero.classList.toggle('is-paused', paused);
+      if (toggleLabel) toggleLabel.textContent = paused ? 'Reproducir' : 'Pausar';
+      toggle.setAttribute('aria-label', paused ? 'Reproducir el vídeo' : 'Pausar el vídeo');
+    };
+
+    /* Never spend 2–3 MB on someone who asked us not to move, is on Save-Data,
+       or is on 2g. They keep the poster, which is the same opening frame. */
+    const wantsVideo = () => {
+      if (reduce.matches) return false;
+      const conn = (navigator as any).connection;
+      if (conn?.saveData) return false;
+      if (typeof conn?.effectiveType === 'string' && conn.effectiveType.includes('2g')) return false;
+      return true;
+    };
+
+    let waits = 0;
+
+    const startVideo = () => {
+      if (video.dataset.loaded || !wantsVideo()) return;
+
+      /* Measure the hero rather than the window: a prerendered or backgrounded
+         tab can report innerWidth 0 long after layout is real, and guessing
+         there hands a desktop the vertical cut. Retry briefly, then take the
+         16:9 one — a wide crop letterboxed is far kinder than a tall crop
+         stretched across a desktop hero. */
+      const width =
+        hero.getBoundingClientRect().width ||
+        window.innerWidth ||
+        document.documentElement.clientWidth ||
+        0;
+
+      if (width === 0 && waits < 12) {
+        waits += 1;
+        window.setTimeout(startVideo, 150);
+        return;
+      }
+
+      const wantsMobileCut = width > 0 && width < 900;
+      const src = wantsMobileCut ? video.dataset.srcMobile : video.dataset.srcDesktop;
+      if (!src) return;
+
+      video.dataset.loaded = 'true';
+
+      video.addEventListener(
+        'canplay',
+        () => {
+          hero.classList.add('is-playing');
+          if (toggle) toggle.hidden = false;
+          /* autoplay covers most browsers; this covers the rest. A rejection
+             is fine — the poster is already the right picture — but the
+             control has to end up telling the truth either way. */
+          Promise.resolve(video.play())
+            .catch(() => {})
+            .then(syncToggle);
+        },
+        { once: true }
+      );
+
+      /* Assigning src is enough to begin loading. An explicit load() here
+         would abort the pending play() and strand the hero on frame one. */
+      video.src = src;
+    };
+
+    /* PHASE 04: only after the page has finished loading, so the video never
+       competes with the LCP poster or with the entrance. */
+    const defer = () => {
+      const idle = (window as any).requestIdleCallback;
+      if (typeof idle === 'function') idle(startVideo, { timeout: 1200 });
+      else window.setTimeout(startVideo, 200);
+    };
+
+    if (document.readyState === 'complete') defer();
+    else window.addEventListener('load', defer, { once: true });
+
+    /* --- Pause control (WCAG 2.2.2) -------------------------------------- */
+    if (toggle) {
+      toggle.addEventListener('click', () => {
+        if (video.paused) Promise.resolve(video.play()).catch(() => {});
+        else video.pause();
+      });
+
+      /* Driven by the element's own events, so the label stays right even if
+         the browser pauses playback on its own (backgrounded tab, low power). */
+      video.addEventListener('play', syncToggle);
+      video.addEventListener('pause', syncToggle);
+    }
+
+    /* --- Leaving the hero, for engines without scroll-driven animations ---
+       Safari < 26 and Firefox land here. The listener is passive, coalesced
+       into a single rAF, and only attached while the hero is on screen. */
+    const supportsTimeline =
+      typeof CSS !== 'undefined' && CSS.supports?.('animation-timeline: view()');
+
+    if (!supportsTimeline && !reduce.matches && 'IntersectionObserver' in window) {
+      const content = hero.querySelector<HTMLElement>('[data-hero-content]');
+      const mediaEl = hero.querySelector<HTMLElement>('[data-hero-media]');
+
+      if (content && mediaEl) {
+        let queued = false;
+
+        const paint = () => {
+          queued = false;
+          const progress = Math.min(1, Math.max(0, window.scrollY / (hero.offsetHeight || 1)));
+          content.style.opacity = String(1 - Math.min(1, progress / 0.7));
+          content.style.transform = `translate3d(0, ${-progress * 64}px, 0)`;
+          mediaEl.style.transform = `scale(${1 - progress * 0.06})`;
+        };
+
+        const onScroll = () => {
+          if (queued) return;
+          queued = true;
+          requestAnimationFrame(paint);
+        };
+
+        new IntersectionObserver((entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) window.addEventListener('scroll', onScroll, { passive: true });
+            else window.removeEventListener('scroll', onScroll);
+          }
+        }).observe(hero);
+
+        paint();
+      }
+    }
+  }
+</script>

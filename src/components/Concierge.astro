@@ -1,64 +1,100 @@
 ---
 /**
- * LA MUCCA AI CONCIERGE (El Anfitrión)
- * A conversational digital host that guides users to the right experience.
- * Designed as a frictionless overlay with progressive intent understanding.
+ * ITERATION 07 — EL CONCIERGE DE LA MUCCA
+ * A compact floating panel, not a takeover — deliberately smaller than a
+ * typical chat widget so the site stays visible behind it. The "brain" is a
+ * small keyword-matched state machine, not a real model; it never fakes a
+ * long "thinking" delay, and every recommendation is drawn from the same
+ * verified `restaurants` collection the rest of the site uses (moods,
+ * occasions, features — never an invented per-venue claim).
+ *
+ * Context-sharing with «Encuentra tu Mucca» (Ch05Descubre.astro): both
+ * components read/write the same sessionStorage key so the concierge never
+ * re-asks something the wizard already answered this visit.
  */
 import { getCollection } from 'astro:content';
+import { getImage } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
 
 const venues = (await getCollection('restaurants')).sort((a, b) => a.data.order - b.data.order);
 
-// Pre-compute data for the mock AI
-const aiVenues = venues.map(v => ({
+const fotos = import.meta.glob<{ default: ImageMetadata }>('../assets/casas/*.jpg', {
+  eager: true,
+});
+
+const heroPorSlug = Object.fromEntries(
+  await Promise.all(
+    venues.map(async (v) => {
+      const foto = fotos[`../assets/casas/${v.data.slug}.jpg`]?.default;
+      if (!foto) return [v.data.slug, null];
+      const [avif, webp, jpg] = await Promise.all([
+        getImage({ src: foto, width: 560, format: 'avif' }),
+        getImage({ src: foto, width: 560, format: 'webp' }),
+        getImage({ src: foto, width: 560, format: 'jpeg' }),
+      ]);
+      return [v.data.slug, { avif: avif.src, webp: webp.src, jpg: jpg.src }];
+    })
+  )
+);
+
+// Pre-compute data for the mock AI — every field traces to the verified content model.
+const aiVenues = venues.map((v) => ({
   slug: v.data.slug,
   name: v.data.name,
   tagline: v.data.tagline,
   neighborhood: v.data.neighborhood,
-  bookingUrl: v.data.bookingUrl,
+  bookingUrl: v.data.bookingUrl || null,
+  phone: v.data.phone || null,
   moods: v.data.moods || [],
   occasions: v.data.occasions || [],
   times: v.data.times || [],
+  groups: v.data.groups || [],
+  zone: v.data.zone || null,
   features: v.data.features || [],
-  accent: v.data.accent || 'tomato'
+  accent: v.data.accent || 'tomato',
+  hero: heroPorSlug[v.data.slug],
 }));
+
+const base = import.meta.env.BASE_URL;
 ---
 
 <!-- The Floating Action Button -->
-<button class="concierge-fab" id="concierge-trigger" aria-label="Hablar con El Anfitrión" aria-expanded="false">
+<button class="concierge-fab" id="concierge-trigger" aria-label="Hablar con el Concierge de la Mucca" aria-expanded="false">
   <span class="fab-icon">✨</span>
-  <span class="fab-text">Tu Anfitrión</span>
+  <span class="fab-text">Concierge</span>
 </button>
 
-<!-- The Concierge Overlay -->
+<!-- The Concierge Panel — a floating widget, not a full-screen overlay -->
 <div id="concierge-overlay" class="concierge-overlay" aria-hidden="true" hidden>
-  <div class="concierge-backdrop" id="concierge-backdrop"></div>
-  
-  <aside class="concierge-panel" role="dialog" aria-label="El Anfitrión">
+  <aside class="concierge-panel" role="dialog" aria-label="El Concierge de la Mucca">
     <header class="concierge-header">
       <div class="concierge-identity">
-        <h2 class="concierge-title">El Anfitrión</h2>
+        <h2 class="concierge-title">El Concierge de la Mucca</h2>
         <p class="concierge-status">
           <span class="status-dot"></span> En línea
         </p>
       </div>
       <button class="btn-close" id="concierge-close" aria-label="Cerrar">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M18 6L6 18M6 6l12 12"/>
         </svg>
       </button>
     </header>
 
     <div class="concierge-chat" id="concierge-chat" aria-live="polite">
-      <!-- Welcome Message -->
+      <!-- Welcome message -->
       <div class="msg msg--ai">
-        <div class="msg-bubble">
-          Hola. Soy tu anfitrión digital. Conozco todas nuestras casas y sus mesas. ¿Qué plan tienes en mente para hoy?
+        <div class="msg-bubble msg-bubble--entry">
+          <p class="msg-entry__kicker">¿No sabes dónde ir?</p>
+          <p>Te ayudamos.</p>
         </div>
       </div>
       <div class="msg-quick-replies" id="initial-replies">
-        <button class="quick-reply">Salgo con amigos</button>
-        <button class="quick-reply">Cena romántica</button>
-        <button class="quick-reply">¿Horarios?</button>
+        <button class="quick-reply">Quiero cenar con amigos</button>
+        <button class="quick-reply">Busco un sitio para una cita</button>
+        <button class="quick-reply">Estoy de visita en Madrid</button>
+        <button class="quick-reply">¿Qué me recomiendas?</button>
+        <button class="quick-reply">Quiero comer pizza</button>
       </div>
     </div>
 
@@ -68,12 +104,12 @@ const aiVenues = venues.map(v => ({
     </div>
 
     <form class="concierge-input-area" id="concierge-form">
-      <input 
-        type="text" 
-        id="concierge-input" 
-        placeholder="Escribe aquí tu plan..." 
-        autocomplete="off" 
-        required 
+      <input
+        type="text"
+        id="concierge-input"
+        placeholder="Escribe aquí tu plan..."
+        autocomplete="off"
+        required
       />
       <button type="submit" class="btn-send" aria-label="Enviar">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -83,8 +119,9 @@ const aiVenues = venues.map(v => ({
     </form>
   </aside>
 
-  <script is:inline define:vars={{ aiVenues }}>
+  <script is:inline define:vars={{ aiVenues, baseUrl: base }}>
     window.lamuccaAIVenues = aiVenues;
+    window.lamuccaAIBase = baseUrl;
   </script>
 </div>
 
@@ -143,45 +180,47 @@ const aiVenues = venues.map(v => ({
     }
   }
 
-  /* --- Overlay & Panel --- */
+  /* --- The panel: a floating widget, never a takeover ------------------ */
   .concierge-overlay {
     position: fixed;
     inset: 0;
     z-index: var(--z-sheet);
-    display: flex;
-    justify-content: flex-end;
+    pointer-events: none; /* the rest of the site stays clickable behind it */
   }
 
   .concierge-overlay[hidden] {
     display: none !important;
   }
 
-  .concierge-backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(26, 26, 26, 0.4);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-  }
-
   .concierge-panel {
-    position: relative;
-    width: 100%;
-    max-width: 440px;
-    height: 100%;
-    background: color-mix(in srgb, var(--surface-page) 85%, transparent);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border-left: var(--rule);
+    pointer-events: auto;
+    position: fixed;
+    right: var(--space-l);
+    bottom: calc(var(--space-l) + 4.75rem);
+    width: min(23rem, calc(100vw - 2 * var(--space-l)));
+    max-height: min(38rem, calc(100vh - 8rem));
     display: flex;
     flex-direction: column;
-    /* Removed soft shadow to respect "A DOS TINTAS" design system */
+    background: color-mix(in srgb, var(--surface-page) 92%, transparent);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: var(--rule);
+    border-radius: 20px;
+    box-shadow: 0 24px 48px -12px rgb(32 27 22 / 0.28);
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
   }
 
-  @media (max-width: 700px) {
+  @media (max-width: 899px) {
     .concierge-panel {
-      max-width: 100%;
-      border-left: none;
+      left: var(--space-s);
+      right: var(--space-s);
+      bottom: calc(var(--reserve-bar-height) + env(safe-area-inset-bottom) + var(--space-s) + 3.75rem);
+      width: auto;
+      max-height: min(66vh, 34rem);
+      /* The hero photo underneath is busier here than on desktop — a touch
+         more opaque keeps chat text legible without losing the glass feel. */
+      background: color-mix(in srgb, var(--surface-page) 97%, transparent);
     }
   }
 
@@ -190,16 +229,17 @@ const aiVenues = venues.map(v => ({
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: var(--space-s);
     padding: var(--space-m) var(--space-l);
     border-bottom: var(--rule);
-    background: color-mix(in srgb, var(--surface-page) 95%, transparent);
+    flex: none;
   }
 
   .concierge-title {
     font-family: var(--font-display);
-    font-size: var(--step-2);
+    font-size: var(--step-1);
     font-weight: var(--weight-display);
-    line-height: 1;
+    line-height: 1.15;
   }
 
   .concierge-status {
@@ -228,185 +268,236 @@ const aiVenues = venues.map(v => ({
   }
 
   .btn-close {
+    flex: none;
     background: none;
     border: none;
     cursor: pointer;
     color: var(--text-primary);
     padding: 8px;
     margin: -8px;
-    min-width: 44px;
-    min-height: 44px;
+    min-width: 40px;
+    min-height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: transform var(--t-micro) var(--ease-out);
-    position: relative;
-    z-index: 10;
   }
 
   .btn-close:hover {
     transform: rotate(90deg);
   }
 
-  /* --- Chat Area --- */
+  /* --- Chat area --- */
   .concierge-chat {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
-    padding: var(--space-l);
+    padding: var(--space-m);
     display: flex;
     flex-direction: column;
-    gap: var(--space-m);
+    gap: var(--space-s);
     scroll-behavior: smooth;
   }
 
-  .msg {
+  /* The chat log is built at runtime via insertAdjacentHTML (see the
+     <script> below), so none of these elements carry Astro's scoping
+     attribute — every selector below that can target a message, card or
+     quick-reply has to be :global() or it silently never matches. */
+  :global(.msg) {
     display: flex;
     flex-direction: column;
-    max-width: 85%;
-    animation: fade-in-up 0.4s var(--ease-out) both;
+    max-width: 92%;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: msg-in var(--t-enter) var(--ease-out) both;
   }
 
-  @keyframes fade-in-up {
-    from { opacity: 0; transform: translateY(10px); }
+  @keyframes msg-in {
     to { opacity: 1; transform: none; }
   }
 
-  .msg--ai {
+  :global(.msg--ai) {
     align-self: flex-start;
   }
 
-  .msg--user {
+  :global(.msg--user) {
     align-self: flex-end;
   }
 
-  .msg-bubble {
-    padding: 1rem 1.25rem;
-    border-radius: 1.25rem;
-    font-size: var(--step-0);
+  :global(.msg-bubble) {
+    padding: 0.85rem 1.1rem;
+    border-radius: 1.1rem;
+    font-size: var(--step--1);
     line-height: 1.5;
     text-wrap: pretty;
   }
 
-  .msg--ai .msg-bubble {
-    background: var(--paper);
+  :global(.msg--ai .msg-bubble) {
+    background: var(--surface-raised);
     color: var(--text-primary);
-    border-bottom-left-radius: 0.25rem;
+    border-bottom-left-radius: 0.3rem;
   }
 
-  .msg--user .msg-bubble {
+  :global(.msg--user .msg-bubble) {
     background: var(--text-accent);
     color: var(--surface-page);
-    border-bottom-right-radius: 0.25rem;
+    border-bottom-right-radius: 0.3rem;
   }
 
-  /* Rich Card inside Chat */
-  .msg-card {
-    margin-top: 8px;
+  .msg-bubble--entry {
+    display: grid;
+    gap: 2px;
+  }
+
+  .msg-entry__kicker {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: var(--weight-display);
+    line-height: 1.2;
+  }
+
+  /* --- Rich card inside chat: image → name → reason → CTAs --- */
+  :global(.msg-card) {
+    margin-top: 4px;
     border: var(--rule);
     border-radius: var(--radius-card);
     background: var(--surface-page);
     overflow: hidden;
     width: 100%;
-    min-width: 280px;
+    min-width: 15rem;
   }
 
-  .msg-card__body {
-    padding: var(--space-m);
+  :global(.msg-card__image) {
+    display: block;
+    position: relative;
+    --campo-ratio: 16 / 10;
+    text-decoration: none;
   }
 
-  .msg-card__title {
-    font-size: var(--step-1);
-    font-weight: 600;
+  :global(.msg-card__image picture),
+  :global(.msg-card__image img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
   }
 
-  .msg-card__meta {
+  :global(.msg-card__image img) {
+    object-fit: cover;
+    filter: none;
+  }
+
+  :global(.msg-card__body) {
+    padding: var(--space-s) var(--space-m);
+  }
+
+  :global(.msg-card__title) {
+    font-family: var(--font-display);
+    font-size: var(--step-0);
+    font-weight: 560;
+  }
+
+  :global(.msg-card__meta) {
+    font-size: var(--step--1);
+    color: var(--text-tertiary);
+    margin-top: 2px;
+  }
+
+  :global(.msg-card__reason) {
+    margin-top: var(--space-2xs);
     font-size: var(--step--1);
     color: var(--text-secondary);
-    margin-top: 4px;
+    line-height: 1.45;
   }
 
-  .msg-card__actions {
+  :global(.msg-card__actions) {
     display: flex;
     gap: 8px;
-    padding: var(--space-m);
-    padding-top: 0;
+    padding: 0 var(--space-m) var(--space-m);
   }
 
-  .msg-card .btn {
+  :global(.msg-card .btn) {
     flex: 1;
     text-align: center;
-    padding: 0.6em;
+    padding: 0.6em 0.4em;
     min-height: 40px;
+    font-size: var(--step--2);
   }
 
-  /* Quick Replies */
-  .msg-quick-replies {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+  /* A single follow-up reservation nudge, lighter than a full card */
+  :global(.msg-reserve) {
     margin-top: 4px;
   }
 
-  .quick-reply {
+  /* --- Quick replies --- */
+  :global(.msg-quick-replies) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 2px;
+  }
+
+  :global(.quick-reply) {
     background: transparent;
     border: var(--rule-width) solid var(--text-primary);
     color: var(--text-primary);
-    padding: 0.4em 1em;
-    min-height: 44px; /* Tap target */
+    padding: 0.4em 0.9em;
+    min-height: 40px;
     border-radius: var(--radius-pill);
     font-family: var(--font-text);
-    font-size: var(--step--1);
+    font-size: var(--step--2);
     cursor: pointer;
-    transition: all var(--t-micro) var(--ease-out);
+    transition: background var(--t-micro) var(--ease-out), color var(--t-micro) var(--ease-out);
   }
 
-  .quick-reply:hover {
+  :global(.quick-reply:hover) {
     background: var(--text-primary);
     color: var(--surface-page);
   }
 
-  /* Typing Indicator */
+  /* --- Typing indicator: minimal, brief --- */
   .concierge-typing {
-    padding: 0 var(--space-l) var(--space-m);
+    padding: 0 var(--space-m) var(--space-xs);
     display: flex;
     gap: 4px;
     align-items: center;
   }
 
   .concierge-typing .dot {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
     background: var(--text-tertiary);
     border-radius: 50%;
-    animation: typing 1.4s infinite both;
+    animation: typing 1.2s infinite both;
   }
 
   .concierge-typing .dot:nth-child(1) { animation-delay: 0s; }
-  .concierge-typing .dot:nth-child(2) { animation-delay: 0.2s; }
-  .concierge-typing .dot:nth-child(3) { animation-delay: 0.4s; }
+  .concierge-typing .dot:nth-child(2) { animation-delay: 0.15s; }
+  .concierge-typing .dot:nth-child(3) { animation-delay: 0.3s; }
 
   @keyframes typing {
     0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
     40% { transform: scale(1); opacity: 1; }
   }
 
-  /* --- Input Area --- */
+  /* --- Input area --- */
   .concierge-input-area {
+    flex: none;
     display: flex;
-    gap: var(--space-s);
-    padding: var(--space-m) var(--space-l);
-    background: color-mix(in srgb, var(--surface-page) 95%, transparent);
+    gap: var(--space-xs);
+    padding: var(--space-s) var(--space-m);
     border-top: var(--rule);
   }
 
   #concierge-input {
     flex: 1;
+    min-width: 0;
     background: var(--surface-page);
     border: var(--rule);
     border-radius: var(--radius-pill);
-    padding: 0.8rem 1.25rem;
+    padding: 0.65rem 1rem;
     font-family: var(--font-text);
-    font-size: var(--step-0);
+    font-size: var(--step--1);
     color: var(--text-primary);
     outline: none;
     transition: border-color var(--t-micro) var(--ease-out);
@@ -417,11 +508,12 @@ const aiVenues = venues.map(v => ({
   }
 
   .btn-send {
+    flex: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
+    width: 42px;
+    height: 42px;
     border: none;
     border-radius: 50%;
     background: var(--text-primary);
@@ -433,152 +525,309 @@ const aiVenues = venues.map(v => ({
   .btn-send:hover {
     transform: scale(1.05);
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .concierge-fab {
+      animation: none;
+    }
+
+    .status-dot,
+    .concierge-typing .dot {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
+
+    :global(.msg) {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
+  }
 </style>
 
 <script>
   import gsap from 'gsap';
 
+  const CONTEXT_KEY = 'lamucca:context';
+
+  function readSharedContext() {
+    try {
+      const raw = sessionStorage.getItem(CONTEXT_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
+  const OCCASION_PHRASE: Record<string, string> = {
+    amigos: 'para ir con amigos',
+    cita: 'para una cita',
+    familia: 'para un plan en familia',
+    trabajo: 'para una comida de trabajo',
+    solo: 'para ti solo',
+  };
+
+  const MOOD_PHRASE: Record<string, string> = {
+    animado: 'con ambiente animado',
+    tranquilo: 'tranquilo, para hablar bien',
+  };
+
   class ConciergeBrain {
+    memory: Record<string, any>;
+    state: string;
+
     constructor() {
       this.state = 'idle';
-      this.memory = {};
+      // Whatever «Encuentra tu Mucca» already knows this visit — never re-asked.
+      const shared = readSharedContext();
+      this.memory = {
+        quien: shared.quien ?? null,
+        mood: shared.plan === 'animado' ? 'animado' : shared.plan?.startsWith('tranquil') ? 'tranquilo' : null,
+        zona: shared.barrio ?? null,
+        lastRecommended: null,
+      };
     }
 
-    async process(message) {
+    hasContext() {
+      return Boolean(this.memory.quien || this.memory.mood || this.memory.zona);
+    }
+
+    pool(venues: any[]) {
+      const { quien, mood, zona } = this.memory;
+      let matches = venues;
+      if (quien && quien !== 'solo') {
+        const byQuien = matches.filter((v) => v.occasions.includes(quien === 'cita' ? 'pareja' : quien));
+        if (byQuien.length) matches = byQuien;
+      } else if (quien === 'solo') {
+        const bySolo = matches.filter((v) => v.groups.includes('solo'));
+        if (bySolo.length) matches = bySolo;
+      }
+      if (mood) {
+        const byMood = matches.filter((v) => v.moods.includes(mood));
+        if (byMood.length) matches = byMood;
+      }
+      if (zona) {
+        const byZona = matches.filter((v) => v.zone === zona);
+        if (byZona.length) matches = byZona;
+      }
+      return matches.length ? matches : venues;
+    }
+
+    pick(venues: any[]) {
+      const pool = this.pool(venues);
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    reasonFor(venue: any) {
+      const bits: string[] = [];
+      if (this.memory.quien) bits.push(OCCASION_PHRASE[this.memory.quien] ?? '');
+      if (this.memory.mood) bits.push(MOOD_PHRASE[this.memory.mood] ?? '');
+      const context = bits.filter(Boolean).join(', ');
+      const place = `En ${venue.neighborhood}.`;
+      return context ? `${place} Justo lo que buscabas: ${context}.` : `${place} ${venue.tagline}.`;
+    }
+
+    recommend(venue: any, text: string, reason?: string) {
+      this.memory.lastRecommended = venue.slug;
+      return { text, card: venue, reason: reason ?? this.reasonFor(venue) };
+    }
+
+    async process(message: string) {
       const msg = message.toLowerCase();
-      // Artificial delay to feel natural (network + typing simulation)
-      await new Promise(r => setTimeout(r, 600 + Math.random() * 800));
+      // A short, real pause for the UI to breathe — never a fake "thinking" delay.
+      await new Promise((r) => setTimeout(r, 260 + Math.random() * 140));
 
-      const venues = window.lamuccaAIVenues || [];
+      const venues = (window as any).lamuccaAIVenues || [];
 
-      // 1. Group Size / Friends Intent
-      if (msg.includes('amig') || msg.includes('grupo') || msg.match(/\b(5|6|7|8|cinco|seis|siete|ocho)\b/)) {
+      // Pizza — real, verified: it's on every casa's carta, and it was born at Lamucca de Pez.
+      if (msg.includes('pizza')) {
+        const origin = venues.find((v: any) => v.slug === 'lamucca-de-pez') ?? venues[0];
+        return this.recommend(
+          origin,
+          'La de boletus, claro. Nació aquí:',
+          'Se sirve en las dieciocho casas — pero esta es donde nació, el 1 de mayo de 2008.'
+        );
+      }
+
+      // Visiting Madrid
+      if (msg.includes('visita') || msg.includes('turis') || msg.includes('estoy en madrid')) {
+        const castizos = venues.filter((v: any) => v.moods.includes('castizo'));
+        const pick = castizos[Math.floor(Math.random() * castizos.length)] ?? venues[0];
+        return this.recommend(
+          pick,
+          'Para conocer Madrid de verdad, esta:',
+          `Ambiente castizo en ${pick.neighborhood} — nada de postureo turístico.`
+        );
+      }
+
+      // Friends
+      if (msg.includes('amig') || msg.includes('grupo')) {
+        this.memory.quien = 'amigos';
+        if (this.memory.mood) {
+          return this.recommend(
+            this.pick(venues),
+            this.memory.mood === 'animado' ? 'Marchando, algo animado:' : 'Va, para hablar tranquilos:'
+          );
+        }
         this.state = 'awaiting_mood';
-        this.memory.occasion = 'amigos';
         return {
-          text: "¡Qué buen plan! Para ir con amigos, ¿os apetece algo animado y con música, o un sitio más tranquilo donde podáis hablar bien?",
-          replies: ["Algo animado 🎸", "Más tranquilo 🍷"]
+          text: '¡Buen plan! ¿Algo animado y con música, o mejor tranquilo para hablar?',
+          replies: ['Animado', 'Tranquilo'],
         };
       }
 
-      // 2. Mood processing (Lively)
-      if (this.state === 'awaiting_mood' && (msg.includes('animad') || msg.includes('musica') || msg.includes('🎸'))) {
+      if (this.state === 'awaiting_mood' && (msg.includes('animad') || msg.includes('música') || msg.includes('musica'))) {
         this.state = 'idle';
-        const matches = venues.filter(v => v.moods.includes('animado') && v.occasions.includes('amigos'));
-        const pick = matches[0] || venues[0]; // Fallback to first if none
-        return {
-          text: `Perfecto. Si queréis buen ambiente y que la noche se alargue, os recomiendo **${pick.name}**. ¿Queréis que os mire mesa?`,
-          card: pick,
-          replies: ["Reservar mesa", "Ver otro local"]
-        };
+        this.memory.mood = 'animado';
+        return this.recommend(this.pick(venues), 'Marchando, algo animado:');
+      }
+      if (this.state === 'awaiting_mood' && msg.includes('tranquil')) {
+        this.state = 'idle';
+        this.memory.mood = 'tranquilo';
+        return this.recommend(this.pick(venues), 'Va, para hablar tranquilos:');
       }
 
-      // 3. Date Night
+      // Date night
       if (msg.includes('parej') || msg.includes('cita') || msg.includes('novi')) {
-        const matches = venues.filter(v => v.occasions.includes('pareja'));
-        const pick = matches[Math.floor(Math.random() * matches.length)];
-        return {
-          text: "Para una cita buscamos siempre cuidar la atmósfera: luces bajas, buen servicio y tranquilidad. Te sugiero esta casa:",
-          card: pick,
-          replies: ["Ver la carta", "Reservar"]
-        };
+        this.memory.quien = 'cita';
+        return this.recommend(
+          this.pick(venues),
+          'Para una cita cuidamos la atmósfera. Esta es la mía:'
+        );
       }
 
-      // 4. Operational queries (Hours)
+      // "¿Qué me recomiendas?" — use context if we already have it
+      if (msg.includes('recomiendas') || msg.includes('recomendacion') || msg.includes('recomendación')) {
+        if (this.hasContext()) {
+          return this.recommend(this.pick(venues), 'Con lo que ya me contaste, esta es la mía:');
+        }
+        return {
+          text: '¿Con quién vas — amigos, en pareja, o solo?',
+          replies: ['Con amigos', 'En pareja', 'Voy solo'],
+        };
+      }
+      if (msg === 'voy solo') {
+        this.memory.quien = 'solo';
+        return this.recommend(this.pick(venues), 'Toma nota:');
+      }
+
+      // Hours
       if (msg.includes('horario') || msg.includes('hora ') || msg.includes('abierto')) {
         return {
-          text: "El concepto *High Low* significa que nuestras cocinas no cierran. Estamos abiertos todo el día de forma ininterrumpida. Puedes venir a comer a las 5 de la tarde o cenar tarde. ¿Para qué casa buscabas mesa?",
-          replies: ["Lamucca de Pez", "La Pescadería", "En Bruto"]
+          text: 'No cerramos: cocina abierta todo el día. ¿Para qué casa te miro mesa?',
+          replies: ['Lamucca de Pez', 'La Pescadería', 'En Bruto'],
         };
       }
 
-      // 5. Connecting to booking (The future CRM/Booking hook)
+      // Ready to book — reuse the last recommendation if there is one
       if (msg.includes('reservar') || msg.includes('mesa')) {
+        if (this.memory.lastRecommended) {
+          const venue = venues.find((v: any) => v.slug === this.memory.lastRecommended);
+          if (venue) return { text: 'Te lo dejo listo:', reserveVenue: venue };
+        }
         return {
-          text: "¡Claro! En futuras versiones, me conectaré directamente a nuestro sistema CoverManager y a tu perfil de cliente para buscarte la mesa en 1 segundo. Por ahora, si tienes un local en mente te paso el enlace directo."
+          text: '¿Para qué casa? Dime el plan y te digo dónde.',
+          replies: ['Con amigos', 'En pareja', 'De visita'],
         };
       }
 
-      // Default Fallback
+      // Fallback
       return {
-        text: "Te entiendo. Para poder recomendarte mejor, ¿qué ambiente te apetece hoy o por qué zona de Madrid estás buscando?",
-        replies: ["Por Malasaña", "Cerca del Centro", "Barrio Salamanca"]
+        text: 'Cuéntame el plan y te digo dónde ir.',
+        replies: ['Con amigos', 'En pareja', 'De visita'],
       };
     }
   }
 
-  // Keep brain instance outside so memory persists across page navigations
+  // Module-scope: re-evaluated fresh on every real page load (this site uses
+  // full navigations + the browser's native View Transitions, not Astro's
+  // client router), so shared context is always read fresh here too.
   const brain = new ConciergeBrain();
 
   function initConcierge() {
     const overlay = document.getElementById('concierge-overlay');
-    // Prevent multiple initializations
     if (!overlay || overlay.dataset.init) return;
     overlay.dataset.init = 'true';
 
-    const trigger = document.getElementById('concierge-trigger');
-    const backdrop = document.getElementById('concierge-backdrop');
-    const panel = document.querySelector('.concierge-panel');
-    const closeBtn = document.getElementById('concierge-close');
-    const chatBox = document.getElementById('concierge-chat');
-    const form = document.getElementById('concierge-form');
-    const input = document.getElementById('concierge-input');
-    const typingIndicator = document.getElementById('concierge-typing');
+    const trigger = document.getElementById('concierge-trigger')!;
+    const panel = document.querySelector<HTMLElement>('.concierge-panel')!;
+    const closeBtn = document.getElementById('concierge-close')!;
+    const chatBox = document.getElementById('concierge-chat')!;
+    const form = document.getElementById('concierge-form') as HTMLFormElement;
+    const input = document.getElementById('concierge-input') as HTMLInputElement;
+    const typingIndicator = document.getElementById('concierge-typing')!;
+    const base = (window as any).lamuccaAIBase ?? '/';
 
     let isOpen = false;
+
+    function reducedMotion() {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
 
     function openConcierge() {
       if (isOpen) return;
       isOpen = true;
-      overlay.hidden = false;
-      overlay.setAttribute('aria-hidden', 'false');
+      overlay!.hidden = false;
+      overlay!.setAttribute('aria-hidden', 'false');
       trigger.setAttribute('aria-expanded', 'true');
-      document.body.style.overflow = 'hidden'; // prevent bg scrolling
 
-      gsap.fromTo(backdrop, { opacity: 0 }, { opacity: 1, duration: 0.4 });
-      
-      const isMobile = window.innerWidth <= 700;
-      gsap.fromTo(panel, 
-        { x: isMobile ? 0 : '100%', y: isMobile ? '100%' : 0 }, 
-        { x: 0, y: 0, duration: 0.6, ease: 'expo.out' }
-      );
-      
-      setTimeout(() => input.focus(), 600);
+      if (reducedMotion()) {
+        gsap.set(panel, { opacity: 1, y: 0, scale: 1 });
+      } else {
+        gsap.fromTo(
+          panel,
+          { opacity: 0, y: 16, scale: 0.96 },
+          { opacity: 1, y: 0, scale: 1, duration: 0.32, ease: 'power2.out' }
+        );
+      }
+
+      setTimeout(() => input.focus(), reducedMotion() ? 0 : 320);
     }
 
     function closeConcierge() {
       if (!isOpen) return;
       isOpen = false;
-      
-      // 1. Move focus FIRST before hiding to prevent ARIA errors
-      trigger.focus();
-      
-      // 2. Update ARIA states
-      trigger.setAttribute('aria-expanded', 'false');
-      overlay.setAttribute('aria-hidden', 'true');
-      document.body.style.overflow = '';
 
-      // 3. Animate out
-      const isMobile = window.innerWidth <= 700;
-      gsap.to(backdrop, { opacity: 0, duration: 0.4 });
-      gsap.to(panel, { 
-        x: isMobile ? 0 : '100%', 
-        y: isMobile ? '100%' : 0, 
-        duration: 0.5, 
-        ease: 'power3.in',
+      trigger.focus();
+      trigger.setAttribute('aria-expanded', 'false');
+      overlay!.setAttribute('aria-hidden', 'true');
+
+      if (reducedMotion()) {
+        overlay!.hidden = true;
+        return;
+      }
+      gsap.to(panel, {
+        opacity: 0,
+        y: 16,
+        scale: 0.96,
+        duration: 0.24,
+        ease: 'power2.in',
         onComplete: () => {
-          overlay.hidden = true;
-        }
+          overlay!.hidden = true;
+        },
       });
     }
 
-    // Bind events directly (no cloning needed since dataset.init protects us)
     trigger.addEventListener('click', openConcierge);
     closeBtn.addEventListener('click', closeConcierge);
-    backdrop.addEventListener('click', closeConcierge);
 
-    // --- UI Renderers ---
-    function appendUserMessage(text) {
+    // A floating panel, not a modal: clicking anywhere outside it just closes it.
+    document.addEventListener('click', (event) => {
+      if (!isOpen) return;
+      const target = event.target as Node;
+      if (panel.contains(target) || trigger.contains(target)) return;
+      closeConcierge();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && isOpen) closeConcierge();
+    });
+
+    // --- UI renderers ---
+    function appendUserMessage(text: string) {
       const html = `
         <div class="msg msg--user">
           <div class="msg-bubble">${text}</div>
@@ -588,9 +837,17 @@ const aiVenues = venues.map(v => ({
       scrollToBottom();
     }
 
-    function appendAIMessage(response) {
-      const formattedText = response.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-      
+    function reserveMarkup(v: any) {
+      return v.bookingUrl
+        ? { href: v.bookingUrl, target: '_blank', rel: 'noopener' }
+        : v.phone
+          ? { href: `tel:+34${v.phone}` }
+          : { href: `${base}restaurantes/${v.slug}/` };
+    }
+
+    function appendAIMessage(response: any) {
+      const formattedText = (response.text || '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
       let html = `
         <div class="msg msg--ai">
           <div class="msg-bubble">${formattedText}</div>
@@ -599,27 +856,48 @@ const aiVenues = venues.map(v => ({
 
       if (response.card) {
         const v = response.card;
+        const rsv = reserveMarkup(v);
         html += `
           <div class="msg msg--ai">
-            <div class="msg-card">
+            <div class="msg-card" data-venue>
+              <a class="msg-card__image campo campo--${v.accent}" href="${base}restaurantes/${v.slug}/">
+                ${
+                  v.hero
+                    ? `<picture>
+                  <source type="image/avif" srcset="${v.hero.avif}" />
+                  <source type="image/webp" srcset="${v.hero.webp}" />
+                  <img src="${v.hero.jpg}" alt="Interior de ${v.name}" loading="lazy" decoding="async" />
+                </picture>`
+                    : ''
+                }
+              </a>
               <div class="msg-card__body">
                 <div class="msg-card__title">${v.name}</div>
                 <div class="msg-card__meta">${v.neighborhood} · ${v.tagline}</div>
+                ${response.reason ? `<p class="msg-card__reason">${response.reason}</p>` : ''}
               </div>
               <div class="msg-card__actions">
-                ${v.bookingUrl
-                  ? `<a href="${v.bookingUrl}" target="_blank" rel="noopener" class="btn btn--stamp" data-reserva-trigger="${v.slug}">Reservar</a>`
-                  : ''}
-                <a href="${import.meta.env.BASE_URL}restaurantes/${v.slug}/" class="btn">Ver casa</a>
+                <a href="${base}restaurantes/${v.slug}/" class="btn">Ver restaurante</a>
+                <a href="${rsv.href}" ${rsv.target ? `target="${rsv.target}" rel="${rsv.rel}"` : ''} class="btn btn--stamp" data-reserva-trigger="${v.slug}">Reservar mesa</a>
               </div>
             </div>
           </div>
         `;
       }
 
+      if (response.reserveVenue) {
+        const v = response.reserveVenue;
+        const rsv = reserveMarkup(v);
+        html += `
+          <div class="msg msg--ai msg-reserve">
+            <a href="${rsv.href}" ${rsv.target ? `target="${rsv.target}" rel="${rsv.rel}"` : ''} class="btn btn--stamp" data-reserva-trigger="${v.slug}">Reservar mesa en ${v.name}</a>
+          </div>
+        `;
+      }
+
       if (response.replies) {
         html += `<div class="msg-quick-replies">`;
-        response.replies.forEach(reply => {
+        response.replies.forEach((reply: string) => {
           html += `<button class="quick-reply">${reply}</button>`;
         });
         html += `</div>`;
@@ -636,25 +914,24 @@ const aiVenues = venues.map(v => ({
 
     function attachQuickReplies() {
       const replies = chatBox.querySelectorAll('.quick-reply:not(.bound)');
-      replies.forEach(btn => {
+      replies.forEach((btn) => {
         btn.classList.add('bound');
         btn.addEventListener('click', () => {
-          btn.parentElement.remove();
-          handleSend(btn.textContent);
+          btn.parentElement?.remove();
+          handleSend(btn.textContent || '');
         });
       });
     }
 
     attachQuickReplies();
 
-    async function handleSend(text) {
+    async function handleSend(text: string) {
       if (!text.trim()) return;
-      
+
       appendUserMessage(text);
       input.value = '';
-      
-      const oldReplies = chatBox.querySelectorAll('.msg-quick-replies');
-      oldReplies.forEach(el => el.remove());
+
+      chatBox.querySelectorAll('.msg-quick-replies').forEach((el) => el.remove());
 
       typingIndicator.hidden = false;
       scrollToBottom();
@@ -673,7 +950,6 @@ const aiVenues = venues.map(v => ({
 
   // Initialize on first load and after every Astro View Transition
   document.addEventListener('astro:page-load', initConcierge);
-  
-  // Also run immediately in case astro:page-load already fired
+
   initConcierge();
 </script>

@@ -250,6 +250,19 @@ const base = import.meta.env.BASE_URL;
 
       const EASE_OUT = 'cubic-bezier(0.22, 1, 0.36, 1)'; /* mirrors --ease-out */
       const answers: Record<string, string | null> = { quien: null, plan: null, comida: null, zona: null, barrio: null };
+
+      /* Shared with Concierge.astro via the same sessionStorage key — so the
+         AI concierge already knows what you told the wizard and never asks
+         it again (ITERATION 07). Session-scoped, not persisted forever: a
+         guess this specific visit shouldn't outlive it. */
+      const CONTEXT_KEY = 'lamucca:context';
+      function persistContext() {
+        try {
+          sessionStorage.setItem(CONTEXT_KEY, JSON.stringify(answers));
+        } catch {
+          /* private browsing / storage disabled — the wizard still works, it just isn't shared */
+        }
+      }
       let current = 0;
       let zonaSubOpen = false;
       let geoZoneBoost = false;
@@ -566,6 +579,11 @@ const base = import.meta.env.BASE_URL;
 
       function resetAll() {
         answers.quien = answers.plan = answers.comida = answers.zona = answers.barrio = null;
+        try {
+          sessionStorage.removeItem(CONTEXT_KEY);
+        } catch {
+          /* nothing to clear */
+        }
         geoZoneBoost = false;
         zonaSubOpen = false;
         barriosSub.hidden = true;
@@ -606,6 +624,7 @@ const base = import.meta.env.BASE_URL;
             btn.setAttribute('aria-pressed', 'true');
             pulseSelect(btn);
             answers[stepId] = optionId;
+            persistContext();
 
             if (stepId === 'zona') {
               if (optionId === 'barrio') {
@@ -658,6 +677,7 @@ const base = import.meta.env.BASE_URL;
           btn.setAttribute('aria-pressed', 'true');
           pulseSelect(btn);
           answers.barrio = btn.dataset.barrio === 'any' ? null : btn.dataset.barrio!;
+          persistContext();
           /* The sub-picker's own job is done — clear it so the first "Atrás"
              from the result goes to step 4, not to silently re-collapsing an
              already-resolved sub-picker (that stale flag was leaving back

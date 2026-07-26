@@ -80,12 +80,14 @@ for (const v of madrid) {
    the exact same flat 0–100 × 0–100 space (viewBox="0 0 100 100" below,
    preserveAspectRatio="none") — so a marker's {x, y} needs no conversion
    factor to land on top of its district, at any container aspect ratio. */
-const SPREAD = 8;
-const MIN_SEP = 4.5; /* percentage points — below this two pins visually
+const MIN_SEP = 3.4; /* percentage points — below this two pins visually
   crowd each other on a diagram this small. Hash-based jitter alone
   occasionally lands two venues within a point of each other by chance, so a
   short relaxation pass runs after the initial scatter to guarantee real
-  separation. */
+  separation — clamped back inside the district's own radius on every pass,
+  so separating crowded points can never push one outside its labelled
+  district (that escaped-marker bug is exactly what sent one pin drifting
+  into open water between Centro and Salamanca before this fix). */
 const markerPos = new Map<string, { x: number; y: number }>();
 for (const [zoneKey, venues] of byZone) {
   const zone = ZONES[zoneKey];
@@ -95,17 +97,30 @@ for (const [zoneKey, venues] of byZone) {
     continue;
   }
 
+  const maxRadius = zone.r * 0.72; // stays visibly inside the field, not grazing its edge
+  const scatterRadius = zone.r * 0.55;
+
   const pts = venues.map((v, i) => {
     const h = hash(v.data.slug);
     const angle = (360 / venues.length) * i + (h % 20) - 10; // ±10° jitter
-    const radiusFrac = 0.65 + ((h >> 8) % 35) / 100; // 65–100% of SPREAD
+    const radiusFrac = 0.5 + ((h >> 8) % 50) / 100; // 50–100% of scatterRadius
     const rad = (angle * Math.PI) / 180;
     return {
       slug: v.data.slug,
-      x: zone.cx + Math.cos(rad) * SPREAD * radiusFrac,
-      y: zone.cy + Math.sin(rad) * SPREAD * radiusFrac,
+      x: zone.cx + Math.cos(rad) * scatterRadius * radiusFrac,
+      y: zone.cy + Math.sin(rad) * scatterRadius * radiusFrac,
     };
   });
+
+  const clamp = (p: { x: number; y: number }) => {
+    const dx = p.x - zone.cx;
+    const dy = p.y - zone.cy;
+    const d = Math.hypot(dx, dy);
+    if (d <= maxRadius || d === 0) return;
+    const k = maxRadius / d;
+    p.x = zone.cx + dx * k;
+    p.y = zone.cy + dy * k;
+  };
 
   for (let pass = 0; pass < 12; pass++) {
     for (let i = 0; i < pts.length; i++) {
@@ -123,6 +138,7 @@ for (const [zoneKey, venues] of byZone) {
         pts[j].y += uy * push;
       }
     }
+    pts.forEach(clamp); // re-contain after every pass, not just at the end
   }
 
   for (const p of pts) markerPos.set(p.slug, { x: p.x, y: p.y });
@@ -516,14 +532,19 @@ const first = clientVenues[0];
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: var(--space-2xl);
-      align-items: stretch;
+      align-items: start;
       margin-top: var(--space-2xl);
-      min-height: 34rem;
     }
 
-    /* --- The district diagram --- */
+    /* --- The district diagram ---
+       aspect-ratio: 1 keeps the field genuinely square, matching the 0–100
+       marker coordinate space 1:1 — stretching it to match the panel's
+       taller, content-driven height (as a `stretch`-aligned grid item would)
+       turned every circular district into a visibly egg-shaped ellipse. */
     .mapa-map {
       position: relative;
+      aspect-ratio: 1;
+      min-height: 28rem;
       border: var(--rule);
       border-radius: var(--radius-card);
       background: var(--surface-raised);
@@ -538,28 +559,30 @@ const first = clientVenues[0];
     }
 
     .mapa-district__field {
-      fill: var(--line);
-      opacity: 0.5;
+      fill: var(--paper-deep);
+      stroke: var(--line);
+      stroke-width: 0.4;
+      opacity: 0.9;
     }
 
     .mapa-district__label {
       font-family: var(--font-text);
-      font-size: 2.4px;
+      font-size: 2.6px;
       font-weight: var(--weight-label);
-      letter-spacing: 0.04em;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
-      fill: var(--text-tertiary);
+      fill: var(--text-secondary);
     }
 
     .mapa-pin {
       position: absolute;
       transform: translate(-50%, -50%);
-      width: 18px;
-      height: 18px;
-      min-width: 18px;
-      min-height: 18px;
-      padding: 13px; /* visual dot stays small; hit target grows to 44px */
-      margin: -13px;
+      width: 22px;
+      height: 22px;
+      min-width: 22px;
+      min-height: 22px;
+      padding: 11px; /* visual dot stays small; hit target grows to 44px */
+      margin: -11px;
       border: 0;
       background: transparent;
       cursor: pointer;
@@ -568,11 +591,11 @@ const first = clientVenues[0];
     .mapa-pin::before {
       content: '';
       position: absolute;
-      inset: 13px;
+      inset: 11px;
       border-radius: 50%;
       background: var(--pin-ink, var(--tomato));
-      border: 2px solid var(--paper);
-      box-shadow: 0 1px 3px rgb(32 27 22 / 0.35);
+      border: 2.5px solid var(--paper);
+      box-shadow: 0 2px 5px rgb(32 27 22 / 0.45);
       transition: transform var(--t-micro) var(--ease-out);
     }
 

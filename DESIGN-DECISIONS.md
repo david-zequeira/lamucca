@@ -221,3 +221,56 @@ pair ≥ 4.61:1, single H1, tap targets ≥44px.
 
 Designed at 375px first. Nav = top bar + full-screen overlay menu. Restaurant switching =
 horizontal snap carousel. Sticky reserve bar. Touch targets ≥ 44px.
+
+## 018 — «El carrete»: the casas list becomes a contact sheet (2026-07-26)
+
+The Chapter 03 `tira` (a horizontal scroller of year + name + coloured tick) was the
+only place the site listed every casa, and it showed none of them. It is replaced by
+`src/components/CarreteCasas.astro`: one full-width row per casa, in the order they
+opened, each row carrying the venue's own photograph.
+
+**Interaction.** Point at a row and it opens: the plate takes the frame and blooms
+into full colour, the tagline lands 120ms behind it, and the rest of the sheet steps
+back to 42%. Keyboard focus does exactly what the pointer does. All of it is CSS
+transitions driven by one class — no GSAP timeline, matching the motion system's
+"zero libraries" default. The old WOW-4 block in `src/scripts/motion.js` is gone.
+
+**Layout stability.** Only one row is ever open, so the list carries a trailing
+spacer whose height is exactly the expansion delta and which shrinks to zero on the
+same curve the row grows on. The sum is constant: nothing below the carrete moves by
+a pixel, at any point in the animation. No CLS, no scroll jump.
+
+**Image law, extended (amends #016).** Full colour was permitted in three places;
+this is the fourth, and it is the same principle as the first: *colour is earned by
+asking*. At rest each plate is `grayscale(1) contrast(1.05) brightness(0.58)` under a
+`mix-blend-mode: color` wash in the casa's own accent — a real two-ink duotone, not a
+grey photo — and the resting veil keeps the type block on near-solid ink so a bright
+room and a dark one carry identical weight. Opening a row removes tint, veil and
+brightness together over `--t-enter`.
+
+**Two modes, exact complements.** `(hover: hover) and (min-width: 900px)` gets the
+carrete proper (5.5rem rows opening to 22rem). Everything else gets
+`(hover: none), (max-width: 899px)`: there is no hover to spend, so nothing is
+hidden — every row is already open at 11rem, colour arrives as the row scrolls into
+view, the veil becomes a bottom-up scrim, and the whole row is one link. Neither
+block undoes the other's work. `.casa__linea` places year/name/neighbourhood with
+grid areas so each mode can rearrange them without a wrapper only one mode wants.
+
+**Photography (closes the #017 "no real assets exist" gap).** 18 venue photographs
+sourced from lamuccacompany.com's own CDN, plus Origen for Makáá and press for
+Kiosco Magadán, Lamucca del Mar, Ultramarines Trafalgar and En Bruto Malasaña.
+Rooms and façades were chosen over plated food — the carrete sells the space;
+Chapter 05 sells the food. They live in `src/assets/casas/<slug>.jpg` and ship
+through Astro `<Picture>` as AVIF/WebP with a JPEG fallback at 560/900/1240w.
+
+The Malasaña façade is the one photo under 1200px wide (1024×683 — the largest
+either outlet published). Its capture EXIF, Canon EOS R on 2025-07-03, two days
+before the 5 July opening, is part of why we trust it shows that venue and not
+the Salesas obrador, whose own press images show a very different room.
+
+**Two fixes carried along.** Chapter 04's concierge card pointed at
+`public/assets/casas/*` files that never existed — every recommendation rendered a
+broken image. It now resolves real optimised URLs server-side via `getImage()` and
+hands them to the client script. And the nav's "Restaurantes" now lands on `#casas`
+(the list of restaurants) instead of `#descubre` (the picker), which answers a
+different question.

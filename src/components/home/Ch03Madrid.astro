@@ -6,12 +6,20 @@
  * Rendered on the ink surface: the quietest, most cinematic beat of the page.
  */
 import { getCollection } from 'astro:content';
+import CarreteCasas from '../CarreteCasas.astro';
 
 const all = await getCollection('restaurants');
-const base = import.meta.env.BASE_URL;
-const tira = all
-  .filter((r) => r.data.openedYear)
-  .sort((a, b) => (a.data.openedYear ?? 0) - (b.data.openedYear ?? 0));
+
+/* The carrete runs in the order the casas opened. The few whose opening year
+   is not yet verified close the sheet in display order rather than being given
+   an invented date (DESIGN-DECISIONS #006). */
+const casas = all
+  .map((r) => r.data)
+  .sort((a, b) => {
+    const ay = a.openedYear ?? Infinity;
+    const by = b.openedYear ?? Infinity;
+    return ay === by ? a.order - b.order : ay - by;
+  });
 
 const barrios = [
   'Malasaña',
@@ -74,37 +82,10 @@ const barrios = [
     </div>
   </div>
 
-  <!-- WOW 3 «El carrete» — one beat per opening. The strip's own horizontal
-       scroll fills the progress rule and inks in each year. Native scroll,
-       snap, keyboard-navigable: the gesture stays the user's. -->
-  <div class="tira-wrap" data-reveal data-reel-scope>
-    <p class="label tira__head container">Año por año, de Madrid a Palma</p>
-    <ol
-      class="tira"
-      tabindex="0"
-      role="list"
-      aria-label="Aperturas de Lamucca por año, de Madrid a Palma"
-      data-reel
-    >
-      {tira.map((r) => (
-        <li class="tira__beat">
-          <a href={`${base}restaurantes/${r.data.slug}/`} class="tira__link">
-            <span
-              class={`tira__tick tira__tick--${r.data.accent}`}
-              aria-hidden="true"
-              data-reel-tick
-            ></span>
-            <span class="tira__year">{r.data.openedYear}</span>
-            <span class="tira__name">{r.data.name}</span>
-            <span class="tira__hood label">{r.data.neighborhood}</span>
-          </a>
-        </li>
-      ))}
-    </ol>
-    <div class="tira__progress container" aria-hidden="true">
-      <span class="tira__progress-fill" data-reel-progress></span>
-    </div>
-  </div>
+  <!-- WOW 3 «El carrete» — one row per opening, printed in the casa's own ink.
+       Point at a row and the room opens in full colour. -->
+  <CarreteCasas casas={casas} heading="Año por año, de Madrid a Palma" />
+
 </section>
 
 <style>
@@ -156,134 +137,6 @@ const barrios = [
   .barrios__item {
     border-color: var(--paper);
     color: var(--text-primary);
-  }
-
-  /* --- La tira --- */
-  .tira-wrap {
-    margin-top: var(--space-3xl);
-  }
-
-  .tira__head {
-    display: block;
-    color: var(--text-tertiary);
-    margin-bottom: var(--space-l);
-  }
-
-  .tira {
-    position: relative;
-    display: flex;
-    list-style: none;
-    margin: 0;
-    padding: var(--space-l) var(--gutter) var(--space-l);
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-  }
-
-  .tira::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Continuous line */
-  .tira::before {
-    content: '';
-    position: absolute;
-    top: var(--space-l);
-    left: 0;
-    right: 0;
-    height: var(--rule-width);
-    background: var(--line-inverse);
-    z-index: 0;
-  }
-
-  .tira:focus-visible {
-    outline: var(--focus-ring);
-    outline-offset: -3px;
-  }
-
-  .tira__beat {
-    position: relative;
-    z-index: 1;
-    flex: 0 0 auto;
-    scroll-snap-align: start;
-    width: 14rem;
-    padding-right: var(--space-l);
-  }
-
-  .tira__link {
-    display: flex;
-    flex-direction: column;
-    text-decoration: none;
-    height: 100%;
-    outline: none;
-  }
-
-  .tira__tick {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--tomato);
-    border: 3px solid var(--ink); /* Cutout effect over the line */
-    margin-top: -8px; /* Center perfectly on the line */
-    margin-bottom: var(--space-m);
-    transition: transform var(--t-micro) var(--ease-out);
-  }
-
-  .tira__tick--butter { background: var(--butter); }
-  .tira__tick--olive { background: var(--olive); }
-
-  /* Progress rule — fills with the strip's own scroll */
-  .tira__progress {
-    display: block;
-    height: var(--rule-width);
-    margin-top: var(--space-m);
-    background: var(--line-inverse);
-  }
-
-  .tira__progress-fill {
-    display: block;
-    height: 100%;
-    background: var(--paper); /* Better contrast than butter on ink background */
-    transform: scaleX(0);
-    transform-origin: left center;
-  }
-
-  /* Without scroll-driven support the rule reads as a full static underline */
-  @supports not (animation-timeline: view()) {
-    .tira__progress-fill {
-      transform: scaleX(1);
-    }
-  }
-
-  .tira__year {
-    font-family: var(--font-display);
-    font-size: var(--step-3);
-    font-weight: var(--weight-display);
-    line-height: 1;
-    color: var(--text-secondary);
-    transition: color var(--t-micro) var(--ease-out);
-    margin-bottom: var(--space-2xs);
-  }
-
-  .tira__name {
-    font-size: var(--step-0);
-    font-weight: 500;
-    color: var(--text-primary);
-    margin-bottom: 2px;
-  }
-
-  .tira__hood {
-    color: var(--text-tertiary);
-  }
-
-  @media (hover: hover) {
-    .tira__link:hover .tira__year {
-      color: var(--paper);
-    }
-    .tira__link:hover .tira__tick {
-      transform: scale(1.3);
-    }
   }
 
   @media (min-width: 900px) {

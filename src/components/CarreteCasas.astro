@@ -1,0 +1,593 @@
+---
+/**
+ * EL CARRETE — the house directory as a contact sheet.
+ *
+ * One row per casa, in the order they opened. At rest every photo is printed in
+ * its casa's own ink (grayscale + `mix-blend-mode: color`) — the two-ink law.
+ * Point at a row and it opens: the photo takes the full frame and blooms into
+ * full colour. Appetite arrives exactly when you ask for it.
+ *
+ * Layout stability: only one row is ever open, so the list reserves the
+ * expansion delta in a trailing spacer that shrinks by the same amount and with
+ * the same easing as the row grows. Total height never changes — nothing below
+ * the carrete moves, ever.
+ *
+ * Mobile has no hover, so it gets the honest version: every row already open at
+ * a compact height, colour earned as it scrolls into view, whole row is a link.
+ */
+import { Picture } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Casa {
+  slug: string;
+  name: string;
+  neighborhood: string;
+  tagline: string;
+  openedYear?: number;
+  accent: string;
+  bookingUrl?: string;
+}
+
+interface Props {
+  casas: Casa[];
+  heading?: string;
+}
+
+const { casas, heading = 'Casa por casa, año por año' } = Astro.props;
+const base = import.meta.env.BASE_URL;
+
+/* Photos live in src/assets so Astro emits AVIF/WebP + a JPEG fallback.
+   A casa without a photo falls back to the .campo halftone field — we print an
+   honest two-ink texture rather than borrow someone else's room. */
+const fotos = import.meta.glob<{ default: ImageMetadata }>('../assets/casas/*.jpg', {
+  eager: true,
+});
+const fotoDe = (slug: string) => fotos[`../assets/casas/${slug}.jpg`]?.default;
+---
+
+<div class="carrete-wrap container" id="casas" data-reveal>
+  <p class="label carrete__head">{heading}</p>
+
+  <ol class="carrete" data-carrete>
+    {
+      casas.map((casa, i) => {
+        const foto = fotoDe(casa.slug);
+        return (
+          <li
+            class="casa"
+            data-casa
+            style={`--casa-ink: var(--${casa.accent}); --casa-i: ${i}`}
+          >
+            <a class="casa__link" href={`${base}restaurantes/${casa.slug}/`} data-casa-link>
+              <span class="casa__campo" aria-hidden="true">
+                {foto ? (
+                  <Picture
+                    src={foto}
+                    formats={['avif', 'webp']}
+                    fallbackFormat="jpg"
+                    widths={[560, 900, 1240]}
+                    sizes="(min-width: 1440px) 1200px, 92vw"
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <span class="casa__campo-vacio" />
+                )}
+                <span class="casa__tinta" />
+              </span>
+
+              <span class="casa__velo casa__velo--reposo" aria-hidden="true" />
+              <span class="casa__velo casa__velo--abierto" aria-hidden="true" />
+
+              <span class="casa__linea">
+                <span class="casa__year">{casa.openedYear ?? '·'}</span>
+                <span class="casa__nombre">{casa.name}</span>
+                <span class="casa__hood label">{casa.neighborhood}</span>
+                <span class="casa__flecha" aria-hidden="true">→</span>
+              </span>
+
+              <span class="casa__pie">
+                <span class="casa__tagline">{casa.tagline}</span>
+                <span class="casa__cta label">Ver la casa</span>
+              </span>
+            </a>
+          </li>
+        );
+      })
+    }
+  </ol>
+</div>
+
+<script>
+  /* Vanilla, no library — the motion system's default. CSS owns every
+     transition; this only decides which row is open. */
+  const carrete = document.querySelector<HTMLElement>('[data-carrete]');
+
+  if (carrete) {
+    const casas = Array.from(carrete.querySelectorAll<HTMLElement>('[data-casa]'));
+    const puedeHover = window.matchMedia('(hover: hover) and (min-width: 900px)');
+    let activa: HTMLElement | null = null;
+
+    const activar = (casa: HTMLElement | null) => {
+      if (casa === activa) return;
+      activa?.classList.remove('is-activa');
+      activa = casa;
+      if (casa) {
+        casa.classList.add('is-activa');
+        carrete.classList.add('is-abierto');
+      } else {
+        carrete.classList.remove('is-abierto');
+      }
+    };
+
+    /* --- Desktop: the row under the pointer opens ------------------------ */
+    casas.forEach((casa) => {
+      casa.addEventListener('pointerenter', (event) => {
+        if (event.pointerType === 'touch' || !puedeHover.matches) return;
+        activar(casa);
+      });
+
+      /* Keyboard gets the same reveal as the mouse */
+      casa.addEventListener('focusin', () => {
+        if (!puedeHover.matches) return;
+        activar(casa);
+      });
+    });
+
+    carrete.addEventListener('pointerleave', (event) => {
+      if (event.pointerType === 'touch') return;
+      activar(null);
+    });
+
+    carrete.addEventListener('focusout', (event) => {
+      if (!carrete.contains(event.relatedTarget as Node)) activar(null);
+    });
+
+    /* --- Colour is earned: photos stay in their casa's ink until seen ---- */
+    if ('IntersectionObserver' in window) {
+      const revelar = new IntersectionObserver(
+        (entradas) => {
+          entradas.forEach((entrada) => {
+            if (!entrada.isIntersecting) return;
+            entrada.target.classList.add('is-vista');
+            revelar.unobserve(entrada.target);
+          });
+        },
+        { rootMargin: '0px 0px -12% 0px', threshold: 0.35 }
+      );
+      casas.forEach((casa) => revelar.observe(casa));
+    } else {
+      casas.forEach((casa) => casa.classList.add('is-vista'));
+    }
+
+    /* A pointer device that appears (or a resize past the breakpoint) must not
+       leave a stale open row behind. */
+    puedeHover.addEventListener('change', () => activar(null));
+  }
+</script>
+
+<style>
+  .carrete-wrap {
+    margin-top: var(--space-3xl);
+  }
+
+  .carrete__head {
+    display: block;
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-m);
+  }
+
+  .carrete {
+    --h-reposo: 9.5rem;
+    --h-abierta: 9.5rem;
+    --t-abrir: 560ms;
+
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: var(--rule-width) solid var(--line);
+  }
+
+  /* The reserve. Its height is exactly the expansion delta, and it shrinks to
+     zero on the same curve the open row grows on — so the sum is constant and
+     the page below the carrete never shifts by a single pixel. */
+  .carrete::after {
+    content: '';
+    display: block;
+    height: calc(var(--h-abierta) - var(--h-reposo));
+    transition: height var(--t-abrir) var(--ease-out);
+  }
+
+  .carrete.is-abierto::after {
+    height: 0;
+  }
+
+  .casa {
+    position: relative;
+    height: var(--h-reposo);
+    overflow: hidden;
+    border-bottom: var(--rule-width) solid var(--line);
+    transition:
+      height var(--t-abrir) var(--ease-out),
+      opacity var(--t-micro) var(--ease-out);
+  }
+
+  .casa__link {
+    position: relative;
+    display: block;
+    height: 100%;
+    isolation: isolate;
+    text-decoration: none;
+    color: var(--text-primary);
+    outline: none;
+  }
+
+  /* --- El campo: the printed photo ---------------------------------------- */
+
+  .casa__campo {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    isolation: isolate;
+    background: var(--ink);
+  }
+
+  .casa__campo :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* At rest the plate is grayscale and pulled down, so a bright room and a
+       dark one carry the same weight and the type never has to fight either.
+       The tint below then paints the whole plate in the casa's ink. */
+    filter: grayscale(1) contrast(1.05) brightness(0.58);
+    transform: scale(1.06);
+    transition:
+      filter var(--t-enter) var(--ease-out),
+      transform var(--t-abrir) var(--ease-out);
+  }
+
+  /* No photo yet — the honest halftone field, never a borrowed room */
+  .casa__campo-vacio {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle, var(--paper) 1.7px, transparent 1.8px) 0 0 / 13px 13px,
+      var(--casa-ink);
+    opacity: 0.55;
+  }
+
+  .casa__tinta {
+    position: absolute;
+    inset: 0;
+    background: var(--casa-ink);
+    mix-blend-mode: color;
+    opacity: 0.62;
+    transition: opacity var(--t-enter) var(--ease-out);
+  }
+
+  /* --- Los velos: legibility, cross-faded ---------------------------------- */
+
+  .casa__velo {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    transition: opacity var(--t-abrir) var(--ease-out);
+  }
+
+  /* The type block always sits on near-solid ink; the plate is only teased
+     towards the right edge. */
+  .casa__velo--reposo {
+    opacity: 1;
+    background: linear-gradient(
+      100deg,
+      rgb(32 27 22 / 0.96) 0%,
+      rgb(32 27 22 / 0.94) 34%,
+      rgb(32 27 22 / 0.62) 100%
+    );
+  }
+
+  .casa__velo--abierto {
+    opacity: 0;
+    background:
+      linear-gradient(180deg, rgb(32 27 22 / 0.55) 0%, rgb(32 27 22 / 0) 42%),
+      linear-gradient(
+        100deg,
+        rgb(32 27 22 / 0.88) 0%,
+        rgb(32 27 22 / 0.42) 46%,
+        rgb(32 27 22 / 0.06) 100%
+      );
+  }
+
+  /* --- La línea: always legible, anchored to the top of the row ------------ */
+
+  /* Year, name and neighbourhood are siblings so each mode can place them with
+     grid areas instead of a wrapper that only one of the two layouts wants. */
+  .casa__linea {
+    position: absolute;
+    inset: 0 0 auto 0;
+    z-index: 2;
+    height: var(--h-reposo);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'year nombre flecha'
+      'year hood   flecha';
+    align-content: center;
+    column-gap: var(--space-m);
+    padding-inline: var(--space-s);
+  }
+
+  .casa__year {
+    grid-area: year;
+    align-self: center;
+    font-family: var(--font-display);
+    font-size: var(--step-3);
+    font-weight: var(--weight-display);
+    line-height: 1;
+    letter-spacing: var(--track-title);
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
+    transition: color var(--t-enter) var(--ease-out);
+  }
+
+  .casa__nombre {
+    grid-area: nombre;
+    align-self: end;
+    font-family: var(--font-display);
+    font-size: var(--step-2);
+    font-weight: var(--weight-display);
+    line-height: var(--leading-card);
+    letter-spacing: var(--track-title);
+    color: var(--text-primary);
+    text-wrap: balance;
+  }
+
+  .casa__hood {
+    grid-area: hood;
+    align-self: start;
+    margin-top: 3px;
+    color: var(--text-tertiary);
+    transition: color var(--t-enter) var(--ease-out);
+  }
+
+  .casa__flecha {
+    grid-area: flecha;
+    align-self: center;
+    font-size: var(--step-2);
+    line-height: 1;
+    color: var(--text-tertiary);
+    opacity: 0;
+    transform: translateX(-10px);
+    transition:
+      opacity var(--t-enter) var(--ease-out),
+      transform var(--t-enter) var(--ease-out),
+      color var(--t-enter) var(--ease-out);
+  }
+
+  /* --- El pie: the promise, revealed with the room ------------------------ */
+
+  .casa__pie {
+    position: absolute;
+    inset: auto 0 0 0;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-xs) var(--space-m);
+    padding: var(--space-s);
+  }
+
+  .casa__tagline {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: var(--step-1);
+    line-height: var(--leading-snug);
+    color: var(--text-secondary);
+    text-wrap: pretty;
+  }
+
+  .casa__cta {
+    color: var(--text-accent);
+  }
+
+  .casa__link:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: -6px;
+  }
+
+  /* The two modes below are exact complements of each other — every browser
+     matches one and only one, so neither has to undo the other's work. */
+
+  /* ======================================================================
+     TOUCH & NARROW — there is no hover to spend, so nothing is hidden.
+     Every row is already open at a compact height and the colour is earned
+     by scrolling it into view. The whole row is one link.
+     ====================================================================== */
+
+  @media (hover: none), (max-width: 899px) {
+    .carrete {
+      --h-reposo: 11rem;
+      --h-abierta: 11rem;
+    }
+
+    .casa__link {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+
+    /* Meta line on top, the name below it — read the room, then its name. */
+    .casa__linea {
+      position: static;
+      height: auto;
+      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-areas:
+        'year   hood'
+        'nombre nombre';
+      column-gap: var(--space-xs);
+      row-gap: 2px;
+      padding: 0 var(--space-s) var(--space-2xs);
+    }
+
+    .casa__year {
+      font-size: var(--step-0);
+      font-family: var(--font-text);
+      font-weight: var(--weight-label);
+      letter-spacing: var(--track-label);
+      color: var(--text-secondary);
+    }
+
+    .casa__nombre {
+      align-self: start;
+      font-size: var(--step-2);
+    }
+
+    .casa__hood {
+      align-self: center;
+      margin-top: 0;
+      color: var(--text-tertiary);
+    }
+
+    .casa__flecha {
+      display: none;
+    }
+
+    .casa__pie {
+      position: static;
+      padding: 0 var(--space-s) var(--space-s);
+    }
+
+    /* The whole row is the link, so the label would only repeat itself */
+    .casa__cta {
+      display: none;
+    }
+
+    /* Colour arrives as the row does; the veil becomes a bottom-up scrim so a
+       bright room can never swallow the type. */
+    .casa.is-vista .casa__campo :global(img) {
+      filter: none;
+      transform: scale(1);
+    }
+
+    .casa.is-vista .casa__tinta {
+      opacity: 0;
+    }
+
+    .casa__velo--abierto {
+      background: linear-gradient(
+        180deg,
+        rgb(32 27 22 / 0.15) 0%,
+        rgb(32 27 22 / 0.55) 46%,
+        rgb(32 27 22 / 0.94) 100%
+      );
+    }
+
+    .casa.is-vista .casa__velo--abierto {
+      opacity: 1;
+    }
+
+    .casa.is-vista .casa__velo--reposo {
+      opacity: 0;
+    }
+  }
+
+  /* ======================================================================
+     POINTER & WIDE — the carrete proper. Type over a full-bleed plate;
+     the row under the pointer opens and blooms.
+     ====================================================================== */
+
+  @media (hover: hover) and (min-width: 900px) {
+    .carrete {
+      --h-reposo: 5.5rem;
+      --h-abierta: 22rem;
+    }
+
+    .casa__linea {
+      padding-inline: var(--space-m);
+      column-gap: var(--space-l);
+    }
+
+    .casa__pie {
+      padding: var(--space-m);
+      opacity: 0;
+      transform: translateY(10px);
+      transition:
+        opacity var(--t-enter) var(--ease-out),
+        transform var(--t-enter) var(--ease-out);
+    }
+
+    .casa.is-activa {
+      height: var(--h-abierta);
+    }
+
+    .casa.is-activa .casa__campo :global(img) {
+      filter: none;
+      transform: scale(1);
+    }
+
+    .casa.is-activa .casa__tinta {
+      opacity: 0;
+    }
+
+    .casa.is-activa .casa__velo--abierto {
+      opacity: 1;
+    }
+
+    .casa.is-activa .casa__velo--reposo {
+      opacity: 0;
+    }
+
+    .casa.is-activa .casa__pie {
+      opacity: 1;
+      transform: none;
+      /* lands just after the room has opened */
+      transition-delay: 120ms;
+    }
+
+    .casa.is-activa .casa__year {
+      color: var(--text-primary);
+    }
+
+    .casa.is-activa .casa__hood {
+      color: var(--text-secondary);
+    }
+
+    .casa.is-activa .casa__flecha {
+      opacity: 1;
+      transform: none;
+      color: var(--text-primary);
+    }
+
+    /* The rest of the sheet steps back */
+    .carrete.is-abierto .casa:not(.is-activa) {
+      opacity: 0.42;
+    }
+  }
+
+  /* ======================================================================
+     REDUCED MOTION — the reveal still happens, it just does not travel.
+     ====================================================================== */
+
+  @media (prefers-reduced-motion: reduce) {
+    .carrete::after,
+    .casa,
+    .casa__velo,
+    .casa__pie,
+    .casa__flecha,
+    .casa__tinta,
+    .casa__campo :global(img) {
+      transition-duration: 1ms;
+    }
+
+    .casa__campo :global(img) {
+      transform: none;
+    }
+
+    .casa.is-vista .casa__campo :global(img),
+    .casa.is-activa .casa__campo :global(img) {
+      transform: none;
+    }
+  }
+</style>

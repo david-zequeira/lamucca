@@ -4,7 +4,9 @@
 const base = import.meta.env.BASE_URL;
 const isVenuePage = Astro.url.pathname.includes('/restaurantes/');
 const links = [
-  { href: `${base}#descubre`, label: 'Restaurantes' },
+  /* "Restaurantes" lands on the carrete — the actual list of casas — rather
+     than on the picker, which answers a different question. */
+  { href: `${base}#casas`, label: 'Restaurantes' },
   { href: `${base}#madrid`, label: 'Historia' },
   { href: `${base}#comida`, label: 'La comida' },
   { href: `${base}#muckeros`, label: 'Muckeros' },

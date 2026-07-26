@@ -78,8 +78,14 @@ const barrios = [
        scroll fills the progress rule and inks in each year. Native scroll,
        snap, keyboard-navigable: the gesture stays the user's. -->
   <div class="tira-wrap" data-reveal data-reel-scope>
-    <p class="label tira__head container">Casa por casa, año por año</p>
-    <ol class="tira" tabindex="0" role="list" aria-label="Aperturas de Lamucca por año" data-reel>
+    <p class="label tira__head container">Año por año, de Madrid a Palma</p>
+    <ol
+      class="tira"
+      tabindex="0"
+      role="list"
+      aria-label="Aperturas de Lamucca por año, de Madrid a Palma"
+      data-reel
+    >
       {tira.map((r) => (
         <li class="tira__beat">
           <a href={`${base}restaurantes/${r.data.slug}/`} class="tira__link">

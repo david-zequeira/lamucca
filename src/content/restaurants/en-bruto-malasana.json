@@ -1,0 +1,43 @@
+{
+  "name": "En Bruto · Malasaña",
+  "slug": "en-bruto-malasana",
+  "concept": "enbruto",
+  "neighborhood": "Malasaña",
+  "address": "Plaza de Carlos Cambronero 2, Madrid",
+  "city": "Madrid",
+  "tagline": "El obrador en la plaza",
+  "description": "El segundo obrador, abierto en julio de 2025 en la plaza de Carlos Cambronero, junto a Pez: panes de masa madre con harinas ecológicas, bollería ecológica —los rolls de canela y cardamomo—, kombuchas artesanas y café de especialidad. Carta firmada por Andy Boman «El Flaco».",
+  "character": [
+    "Masa madre y harinas ecológicas",
+    "Rolls de canela y cardamomo",
+    "Carta de Andy Boman «El Flaco»"
+  ],
+  "openedYear": 2025,
+  "order": 15,
+  "accent": "butter",
+  "sources": [
+    "https://restauracionnews.com/2025/07/lamucca-en-bruto-apertura/",
+    "https://www.indisa.es/canal-horeca/new-in-town-bruto-llega-malasana"
+  ],
+  "verified": true,
+  "moods": [
+    "luminoso"
+  ],
+  "occasions": [
+    "trabajo",
+    "tardeo"
+  ],
+  "zone": "malasana",
+  "times": [
+    "desayuno",
+    "tardeo"
+  ],
+  "groups": [
+    "solo",
+    "dos"
+  ],
+  "features": [
+    "Café de especialidad",
+    "Pan artesano"
+  ]
+}

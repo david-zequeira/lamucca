@@ -1,21 +1,25 @@
 {
-  "name": "En Bruto",
+  "name": "En Bruto · Salesas",
   "slug": "en-bruto",
   "concept": "enbruto",
-  "neighborhood": "Salesas · Malasaña",
-  "address": "Salesas · Plaza de Carlos Cambronero 2, Madrid",
+  "neighborhood": "Salesas",
+  "address": "Calle San Lucas 13, Madrid",
   "city": "Madrid",
   "tagline": "El obrador-laboratorio",
-  "description": "Panadería artesana, pastelería y café de especialidad: el obrador-laboratorio del grupo, ganador del Madrid Roaster Competition 2023. Desde 2025, también en Malasaña.",
+  "description": "Panadería artesana, pastelería y café de especialidad: el obrador-laboratorio del grupo, con el pan «Pam!», la kombuchería Fermakers y un café ganador del Madrid Roaster Competition 2023.",
   "character": [
     "Pan artesano «Pam!»",
     "Madrid Roaster Competition 2023",
-    "Dos obradores"
+    "Kombuchería Fermakers"
   ],
+  "openedYear": 2022,
   "order": 14,
   "accent": "butter",
   "sources": [
-    "https://www.profesionalhoreca.com/2025/01/03/en-bruto-el-obrador-laboratorio-panaderia-y-cafeteria-de-lamucca-en-madrid/"
+    "https://www.profesionalhoreca.com/en-bruto-el-obrador-laboratorio-panaderia-y-cafeteria-de-lamucca-en-madrid/",
+    "https://enbruto.com/contacto/",
+    "https://www.esmadrid.com/en/nightlife/bruto",
+    "https://www.que.es/2022/11/14/disfrutar-de-la-kombucha-natural-en-madrid-ya-es-posible-con-en-bruto/"
   ],
   "verified": true,
   "moods": [

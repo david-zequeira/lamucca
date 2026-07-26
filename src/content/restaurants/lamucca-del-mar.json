@@ -2,20 +2,24 @@
   "name": "Lamucca del Mar",
   "slug": "lamucca-del-mar",
   "concept": "mar",
-  "neighborhood": "Port Petit · Cala d'Or",
-  "address": "Port Petit, Cala d'Or, Mallorca",
-  "city": "Mallorca",
+  "neighborhood": "El Molinar · Palma",
+  "address": "Carrer del Vicari Joaquim Fuster 2, El Molinar, Palma de Mallorca",
+  "city": "Palma de Mallorca",
   "tagline": "La primera casa junto al mar",
-  "description": "En Port Petit, el puerto más antiguo de Baleares: carta mediterránea, interiores de Eva Quintana con artesanos mallorquines y el espíritu Lamucca mirando al Mediterráneo.",
+  "description": "En el edificio del Port Petit del Molinar, el puerto más antiguo de Baleares: carta mediterránea, interiores de Eva Quintana con artesanos mallorquines y el espíritu Lamucca mirando al Mediterráneo.",
   "character": [
     "Primera casa fuera de Madrid",
     "Interiores Eva Quintana",
     "Carta mediterránea"
   ],
-  "order": 18,
+  "openedYear": 2025,
+  "order": 19,
   "accent": "olive",
   "sources": [
-    "https://www.lamuccacompany.com/abre-lamucca-del-mar-en-mallorca/"
+    "https://www.lamuccacompany.com/abre-lamucca-del-mar-en-mallorca/",
+    "https://restauracionnews.com/2025/06/lamucca-mar-mallorca/",
+    "https://www.neo2.com/lamucca-del-mar-mallorca/",
+    "https://www.ultimahora.es/noticias/local/2016/07/28/206310/molinar-conservara-port-petit-gestionara-autoridad-portuaria.html"
   ],
   "verified": true,
   "moods": [

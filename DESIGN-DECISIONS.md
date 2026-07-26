@@ -256,12 +256,17 @@ view, the veil becomes a bottom-up scrim, and the whole row is one link. Neither
 block undoes the other's work. `.casa__linea` places year/name/neighbourhood with
 grid areas so each mode can rearrange them without a wrapper only one mode wants.
 
-**Photography (closes the #017 "no real assets exist" gap).** 17 venue photographs
+**Photography (closes the #017 "no real assets exist" gap).** 18 venue photographs
 sourced from lamuccacompany.com's own CDN, plus Origen for Makáá and press for
-Kiosco Magadán, Lamucca del Mar and Ultramarines Trafalgar. Rooms and façades were
-chosen over plated food — the carrete sells the space; Chapter 05 sells the food.
-They live in `src/assets/casas/<slug>.jpg` and ship through Astro `<Picture>` as
-AVIF/WebP with a JPEG fallback at 560/900/1240w.
+Kiosco Magadán, Lamucca del Mar, Ultramarines Trafalgar and En Bruto Malasaña.
+Rooms and façades were chosen over plated food — the carrete sells the space;
+Chapter 05 sells the food. They live in `src/assets/casas/<slug>.jpg` and ship
+through Astro `<Picture>` as AVIF/WebP with a JPEG fallback at 560/900/1240w.
+
+The Malasaña façade is the one photo under 1200px wide (1024×683 — the largest
+either outlet published). Its capture EXIF, Canon EOS R on 2025-07-03, two days
+before the 5 July opening, is part of why we trust it shows that venue and not
+the Salesas obrador, whose own press images show a very different room.
 
 **Two fixes carried along.** Chapter 04's concierge card pointed at
 `public/assets/casas/*` files that never existed — every recommendation rendered a

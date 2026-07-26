@@ -1,11 +1,16 @@
 ---
 /**
- * CHAPTER 04 — FIND YOUR MUCCA
- * The signature interactive experience of the La Mucca website.
+ * CHAPTER 04 — ENCUENTRA TU MUCCA (Mood Discovery)
+ * The signature interactive experience: a four-step conversational wizard,
+ * not a form. Every dimension it scores against is grounded in data the
+ * content model already carries (moods/occasions/times/groups/zone) or in
+ * claims the site's own copy already makes — see `deriveDishes` below —
+ * never in invented per-venue facts (DESIGN-DECISIONS #006).
  */
 import { getCollection } from 'astro:content';
 import { getImage } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
+import type { CollectionEntry } from 'astro:content';
 
 const venues = (await getCollection('restaurants')).sort((a, b) => a.data.order - b.data.order);
 
@@ -28,678 +33,1001 @@ const heroPorSlug = Object.fromEntries(
   )
 );
 
-const clientVenues = venues.map(v => ({
+/* Dish signals the wizard's "¿qué te apetece comer?" step scores against.
+   Derived — never hand-tagged — from claims the site already makes elsewhere:
+     · pizza & vegetariano: Ch05Comida's own manifiesto/firmas state these are
+       true of the whole group ("en todas las casas" / "vegano o carnívoro"),
+       so every venue carries them.
+     · hamburguesa: brand-report.md's sourced "cosmopolitan comfort menu"
+       (pizza, nachos, burgers) describes the Lamucca-line houses specifically.
+     · compartir: the venues whose sourced description centres on shared
+       plates — Ultramarines' casquería, La Pescadería's arroces, Kiosco
+       Magadán's vermut-and-tapas terrace.
+   "Pasta" has no source anywhere in the content, so it scores nothing —
+   offered in the UI because the brief asks for it, but never used to claim
+   a venue serves it. */
+function deriveDishes(concept: string) {
+  return {
+    pizza: true,
+    vegetariano: true,
+    hamburguesa: concept === 'lamucca',
+    compartir: concept === 'ultramarines' || concept === 'pescaderia' || concept === 'kiosco',
+  };
+}
+
+const clientVenues = venues.map((v: CollectionEntry<'restaurants'>) => ({
   slug: v.data.slug,
   hero: heroPorSlug[v.data.slug],
   name: v.data.name,
   tagline: v.data.tagline,
   neighborhood: v.data.neighborhood,
-  address: v.data.address,
-  bookingUrl: v.data.bookingUrl,
-  moods: v.data.moods || [],
-  occasions: v.data.occasions || [],
-  times: v.data.times || [],
-  features: v.data.features || [],
-  character: v.data.character || [],
-  accent: v.data.accent || 'tomato'
+  phone: v.data.phone ?? null,
+  bookingUrl: v.data.bookingUrl ?? null,
+  moods: v.data.moods ?? [],
+  occasions: v.data.occasions ?? [],
+  times: v.data.times ?? [],
+  groups: v.data.groups ?? [],
+  zone: v.data.zone ?? null,
+  accent: v.data.accent ?? 'tomato',
+  dishes: deriveDishes(v.data.concept),
 }));
+
+interface Option {
+  id: string;
+  icon: string;
+  label: string;
+}
+
+interface Step {
+  id: string;
+  question: string;
+  options: Option[];
+}
+
+const STEPS: Step[] = [
+  {
+    id: 'quien',
+    question: '¿Con quién vienes?',
+    options: [
+      { id: 'cita', icon: '💕', label: 'Una cita' },
+      { id: 'amigos', icon: '👯', label: 'Amigos' },
+      { id: 'familia', icon: '👨‍👩‍👧', label: 'Familia' },
+      { id: 'solo', icon: '🧍', label: 'Solo' },
+      { id: 'trabajo', icon: '💼', label: 'Trabajo' },
+    ],
+  },
+  {
+    id: 'plan',
+    question: '¿Qué plan te apetece?',
+    options: [
+      { id: 'animado', icon: '🎉', label: 'Algo animado' },
+      { id: 'tranquila', icon: '🕯️', label: 'Una cena tranquila' },
+      { id: 'madrid', icon: '🎸', label: 'Una noche de Madrid' },
+      { id: 'compartir', icon: '🍽️', label: 'Para compartir' },
+      { id: 'hambre', icon: '🙌', label: 'Tengo hambre' },
+    ],
+  },
+  {
+    id: 'comida',
+    question: '¿Qué te apetece comer?',
+    options: [
+      { id: 'pizza', icon: '🍕', label: 'Pizza' },
+      { id: 'pasta', icon: '🍝', label: 'Pasta' },
+      { id: 'hamburguesa', icon: '🍔', label: 'Hamburguesa' },
+      { id: 'compartir', icon: '🥘', label: 'Para compartir' },
+      { id: 'vegetariano', icon: '🥗', label: 'Algo vegetariano' },
+    ],
+  },
+  {
+    id: 'zona',
+    question: '¿Por dónde te viene bien?',
+    options: [
+      { id: 'ubicacion', icon: '📍', label: 'Usar mi ubicación' },
+      { id: 'barrio', icon: '🗺️', label: 'Elegir barrio' },
+      { id: 'igual', icon: '🤷', label: 'Me da igual' },
+    ],
+  },
+];
+
+/* Real zones the content model already uses (src/content.config.ts) — not a
+   separate invented geography. "fuera" (Palma) is left off this picker: it's
+   reachable only through the other three answers, never something a Madrid
+   visitor would deliberately "elegir". */
+const BARRIOS = [
+  { zone: 'malasana', label: 'Malasaña' },
+  { zone: 'centro', label: 'Centro' },
+  { zone: 'chamberi', label: 'Chamberí' },
+  { zone: 'salamanca', label: 'Salamanca' },
+  { zone: 'norte', label: 'Norte' },
+  { zone: 'oeste', label: 'Oeste' },
+];
+
+const base = import.meta.env.BASE_URL;
 ---
 
-<section class="find-mucca" id="descubre" aria-labelledby="descubre-title">
-  <div class="container find-mucca__container">
-    
-    <header class="find-mucca__header" data-main-header>
-      <h2 class="find-mucca__title" id="descubre-title">¿DÓNDE CENAMOS HOY?</h2>
-      <p class="find-mucca__subtitle">Te ayudamos a encontrar tu sitio.</p>
+<section class="finder" id="descubre" aria-labelledby="finder-title" data-finder>
+  <div class="container">
+    <header class="capitulo-head finder__head" data-reveal>
+      <p class="capitulo-num label">Capítulo 04 — Encuentra tu casa</p>
+      <h2 class="capitulo-title finder__title" id="finder-title">
+        ¿Dónde <em>cenamos</em> hoy?
+      </h2>
+      <p class="capitulo-sub">Te ayudamos a encontrar tu sitio.</p>
     </header>
 
-    <div class="find-mucca__interactive" data-interactive>
-      
-      <!-- Steps Container -->
-      <div class="find-mucca__steps-wrapper" data-steps-wrapper aria-live="polite">
-        <div class="find-mucca__step-header">
-          <button type="button" class="btn-back" data-back hidden aria-label="Volver">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          </button>
-          <h3 class="find-mucca__question" data-question></h3>
-        </div>
-
-        <div class="find-mucca__options" data-options>
-          <!-- Option cards injected here -->
-        </div>
+    <div class="finder__stage" data-reveal style="--reveal-delay: 120ms">
+      <div class="finder__progress">
+        <button type="button" class="finder__back" data-back hidden>
+          <span aria-hidden="true">←</span> Atrás
+        </button>
+        <ol class="finder__dots" aria-hidden="true">
+          {STEPS.map((_s, i) => (
+            <li class="dot" data-dot={i}></li>
+          ))}
+        </ol>
+        <button type="button" class="finder__restart" data-restart-top hidden>
+          Volver a empezar
+        </button>
       </div>
 
-      <!-- Result Container -->
-      <div class="find-mucca__result" data-result hidden aria-live="polite">
-        <div class="result-header">
-          <h3 class="result-title">CREEMOS QUE TU SITIO ES...</h3>
-        </div>
-        <div class="result-card" data-result-card>
-          <!-- Card injected here -->
-        </div>
-        <div class="result-actions">
-          <button type="button" class="btn-restart" data-restart>Empezar de nuevo</button>
+      <p class="sr-only" role="status" aria-live="polite" data-announce></p>
+
+      <div class="finder__panels">
+        {STEPS.map((step, i) => (
+          <div
+            class="step"
+            data-step={i}
+            data-step-id={step.id}
+            role="group"
+            aria-labelledby={`step-q-${step.id}`}
+            hidden={i !== 0}
+          >
+            <h3 class="step__q" id={`step-q-${step.id}`} tabindex="-1">{step.question}</h3>
+            <div class="options">
+              {step.options.map((o) => (
+                <button type="button" class="option" data-option={o.id} aria-pressed="false">
+                  <span class="option__icon" aria-hidden="true">{o.icon}</span>
+                  <span class="option__label">{o.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {step.id === 'zona' && (
+              <div class="barrios-sub" data-barrios-sub hidden>
+                <p class="barrios-sub__head label">¿Qué barrio?</p>
+                <div class="options options--compact">
+                  {BARRIOS.map((b) => (
+                    <button type="button" class="option option--compact" data-barrio={b.zone} aria-pressed="false">
+                      {b.label}
+                    </button>
+                  ))}
+                  <button type="button" class="option option--compact" data-barrio="any" aria-pressed="false">
+                    Cualquier zona
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        <div class="result" data-result hidden aria-labelledby="result-title">
+          <p class="result__kicker label" tabindex="-1" data-result-kicker>Creemos que tu sitio es...</p>
+          <div class="result__card-slot" data-result-card></div>
+          <p class="result__foot">
+            <button type="button" class="link-reset" data-restart>Volver a empezar</button>
+          </p>
         </div>
       </div>
-
     </div>
   </div>
 
-  <script is:inline define:vars={{ venuesData: clientVenues }}>
-    window.lamuccaVenues = venuesData;
+  <script is:inline define:vars={{ venuesData: clientVenues, baseUrl: base }}>
+    window.lamuccaFinderVenues = venuesData;
+    window.lamuccaFinderBase = baseUrl;
   </script>
 
   <script>
-    import gsap from 'gsap';
+    /* Vanilla + WAAPI — the motion system's default engine (see motion.css
+       header). No new dependency for a feature this self-contained. */
+    const root = document.querySelector<HTMLElement>('[data-finder]');
+    const venues = (window as any).lamuccaFinderVenues as any[] | undefined;
+    const base = (window as any).lamuccaFinderBase as string | undefined;
 
-    const stepsData = [
-      {
-        id: 'who',
-        question: '¿CON QUIÉN VIENES?',
-        options: [
-          { id: 'cita', label: 'Una cita' },
-          { id: 'amigos', label: 'Amigos' },
-          { id: 'familia', label: 'Familia' },
-          { id: 'solo', label: 'Solo' },
-          { id: 'trabajo', label: 'Trabajo' }
-        ]
-      },
-      {
-        id: 'mood',
-        question: '¿QUÉ PLAN TE APETECE?',
-        options: [
-          { id: 'animado', label: 'Algo animado' },
-          { id: 'tranquila', label: 'Una cena tranquila' },
-          { id: 'madrid', label: 'Una noche de Madrid' },
-          { id: 'compartir', label: 'Para compartir' },
-          { id: 'hambre', label: 'Tengo hambre' }
-        ]
-      },
-      {
-        id: 'food',
-        question: '¿QUÉ TE APETECE COMER?',
-        options: [
-          { id: 'pizza', label: 'Pizza' },
-          { id: 'pasta', label: 'Pasta' },
-          { id: 'hamburguesa', label: 'Hamburguesa' },
-          { id: 'compartir-comida', label: 'Para compartir' },
-          { id: 'vegetariano', label: 'Algo vegetariano' }
-        ]
-      },
-      {
-        id: 'location',
-        question: '¿POR DÓNDE TE VIENE BIEN?',
-        options: [
-          { id: 'ubicacion', label: 'Usar mi ubicación' },
-          { id: 'barrio', label: 'Elegir barrio' },
-          { id: 'igual', label: 'Me da igual' }
-        ]
-      }
-    ];
+    if (root && venues && base !== undefined) {
+      const STEP_IDS = ['quien', 'plan', 'comida', 'zona'];
+      const stage = root.querySelector<HTMLElement>('.finder__stage')!;
+      const panels = root.querySelector<HTMLElement>('.finder__panels')!;
+      const steps = Array.from(root.querySelectorAll<HTMLElement>('[data-step]'));
+      const dots = Array.from(root.querySelectorAll<HTMLElement>('[data-dot]'));
+      const backBtn = root.querySelector<HTMLButtonElement>('[data-back]')!;
+      const restartTopBtn = root.querySelector<HTMLButtonElement>('[data-restart-top]')!;
+      const announce = root.querySelector<HTMLElement>('[data-announce]')!;
+      const resultPanel = root.querySelector<HTMLElement>('[data-result]')!;
+      const resultKicker = root.querySelector<HTMLElement>('[data-result-kicker]')!;
+      const resultCardSlot = root.querySelector<HTMLElement>('[data-result-card]')!;
+      const zonaStep = root.querySelector<HTMLElement>('[data-step-id="zona"]')!;
+      const barriosSub = zonaStep.querySelector<HTMLElement>('[data-barrios-sub]')!;
 
-    let currentStepIndex = 0;
-    let selections = {};
+      const EASE_OUT = 'cubic-bezier(0.22, 1, 0.36, 1)'; /* mirrors --ease-out */
+      const answers: Record<string, string | null> = { quien: null, plan: null, comida: null, zona: null, barrio: null };
+      let current = 0;
+      let zonaSubOpen = false;
+      let geoZoneBoost = false;
+      /* Guards every transition below. Without it, a click landing while the
+         previous swap() is still resolving — a fast double-tap, or the
+         timers above simply running slower than their nominal duration —
+         starts a second goToStep on top of the first, and their hidden-flag
+         writes interleave into a genuinely broken multi-step-visible state. */
+      let busy = false;
 
-    const interactiveEl = document.querySelector('[data-interactive]');
-    const stepsWrapper = document.querySelector('[data-steps-wrapper]');
-    const questionEl = document.querySelector('[data-question]');
-    const optionsEl = document.querySelector('[data-options]');
-    const backBtn = document.querySelector('[data-back]');
-    
-    const resultEl = document.querySelector('[data-result]');
-    const resultCardEl = document.querySelector('[data-result-card]');
-    const restartBtn = document.querySelector('[data-restart]');
-    const mainHeader = document.querySelector('[data-main-header]');
+      /* ---------------------------------------------------------------
+         Scoring — every venue is scored across whichever steps have been
+         answered; highest score wins, ties broken at random. Never zero
+         candidates: step "quien" alone always separates at least a few
+         venues, and the fallback below covers any pathological tie.
+         --------------------------------------------------------------- */
+      const SCORERS: Record<string, Record<string, (v: any) => number>> = {
+        quien: {
+          cita: (v) => (v.occasions.includes('pareja') ? 3 : 0),
+          amigos: (v) => (v.occasions.includes('amigos') ? 3 : 0),
+          familia: (v) => (v.occasions.includes('familia') ? 3 : 0),
+          solo: (v) => (v.groups.includes('solo') ? 3 : 0),
+          trabajo: (v) => (v.occasions.includes('trabajo') ? 3 : 0),
+        },
+        plan: {
+          animado: (v) => (v.moods.includes('animado') ? 3 : 0),
+          tranquila: (v) => (v.moods.includes('tranquilo') ? 3 : 0),
+          madrid: (v) => (v.moods.includes('castizo') ? 3 : v.times.includes('tarde') ? 1.5 : 0),
+          compartir: (v) => (v.dishes.compartir ? 3 : v.groups.includes('muchos') ? 1 : 0),
+          hambre: () => 0,
+        },
+        comida: {
+          pizza: (v) => (v.dishes.pizza ? 1 : 0),
+          pasta: () => 0,
+          hamburguesa: (v) => (v.dishes.hamburguesa ? 3 : 0),
+          compartir: (v) => (v.dishes.compartir ? 3 : 0),
+          vegetariano: (v) => (v.dishes.vegetariano ? 1 : 0),
+        },
+        zona: {
+          ubicacion: (v) => (geoZoneBoost && ['centro', 'malasana', 'chamberi'].includes(v.zone) ? 1 : 0),
+          barrio: (v) => (answers.barrio && answers.barrio !== 'any' && v.zone === answers.barrio ? 2 : 0),
+          igual: () => 0,
+        },
+      };
 
-    if (interactiveEl && window.lamuccaVenues) {
-      init();
-    }
-
-    function init() {
-      renderStep(currentStepIndex, 0);
-      
-      backBtn.addEventListener('click', () => {
-        if (currentStepIndex > 0) {
-          currentStepIndex--;
-          renderStep(currentStepIndex, -1);
+      function scoreVenue(v: any): number {
+        let s = 0;
+        for (const stepId of STEP_IDS) {
+          const answer = answers[stepId];
+          if (!answer) continue;
+          const fn = SCORERS[stepId]?.[answer];
+          if (fn) s += fn(v);
         }
-      });
-
-      restartBtn.addEventListener('click', () => {
-        currentStepIndex = 0;
-        selections = {};
-        
-        gsap.to(resultEl, {
-          opacity: 0,
-          y: 20,
-          duration: 0.3,
-          onComplete: () => {
-            resultEl.hidden = true;
-            mainHeader.hidden = false;
-            stepsWrapper.hidden = false;
-            
-            gsap.fromTo(mainHeader, { opacity: 0 }, { opacity: 1, duration: 0.4 });
-            renderStep(currentStepIndex, -1);
-          }
-        });
-      });
-    }
-
-    function renderStep(index, direction) {
-      const step = stepsData[index];
-      
-      if (index === 0) {
-        backBtn.hidden = true;
-      } else {
-        backBtn.hidden = false;
+        return s;
       }
 
-      const currentQuestion = questionEl.textContent;
-
-      const tl = gsap.timeline({
-        onComplete: () => {
-          questionEl.textContent = step.question;
-          optionsEl.innerHTML = step.options.map(opt => `
-            <button type="button" class="option-card" data-id="${opt.id}">
-              <span class="option-label">${opt.label}</span>
-            </button>
-          `).join('');
-
-          const newCards = optionsEl.querySelectorAll('.option-card');
-          newCards.forEach(card => {
-            card.addEventListener('click', (e) => handleOptionClick(e, step.id, card.getAttribute('data-id'), card));
-          });
-
-          const xOffset = direction === 1 ? 40 : (direction === -1 ? -40 : 0);
-          
-          gsap.fromTo([questionEl, optionsEl], 
-            { x: xOffset, opacity: 0 }, 
-            { x: 0, opacity: 1, duration: 0.35, ease: 'power2.out' }
-          );
-        }
-      });
-
-      if (currentQuestion) {
-        const outX = direction === 1 ? -40 : (direction === -1 ? 40 : 0);
-        tl.to([questionEl, optionsEl], {
-          x: outX,
-          opacity: 0,
-          duration: 0.25,
-          ease: 'power2.in'
-        });
+      function pickVenue() {
+        const scored = venues.map((v) => ({ v, s: scoreVenue(v) }));
+        const max = Math.max(...scored.map((x) => x.s));
+        const top = scored.filter((x) => x.s === max).map((x) => x.v);
+        return top[Math.floor(Math.random() * top.length)];
       }
-    }
 
-    function handleOptionClick(e, stepId, optionId, cardEl) {
-      selections[stepId] = optionId;
-      
-      // Preload image if we are at the last step
-      if (currentStepIndex === stepsData.length - 1) {
-        const venue = pickVenue(selections);
-        if (venue && venue.hero) {
-          const img = new Image();
-          img.src = venue.hero.jpg;
-        }
+      /* ---------------------------------------------------------------
+         Why-text — built only from the visitor's own answers, never from
+         claims about the specific venue, so it can never say something
+         false. Mirrors the brand voice (docs/strategy/brand-strategy.md).
+         --------------------------------------------------------------- */
+      const OCCASION_PHRASE: Record<string, string> = {
+        cita: 'una cita',
+        amigos: 'una noche con amigos',
+        familia: 'un plan en familia',
+        solo: 'una comida a tu ritmo',
+        trabajo: 'una comida de trabajo',
+      };
+      const PLAN_PHRASE: Record<string, string> = {
+        animado: 'con ambiente animado y buena música',
+        tranquila: 'tranquila, para hablar con calma',
+        madrid: 'con ese punto castizo y madrileño',
+        compartir: 'de esas que se alargan compartiendo mesa',
+        hambre: 'sin complicarte la vida',
+      };
+      const FOOD_PHRASE: Record<string, string> = {
+        pizza: ' y buena pizza',
+        hamburguesa: ' y unas hamburguesas de las buenas',
+        compartir: ' para picar de todo',
+        vegetariano: ' cuidando también las opciones vegetarianas',
+      };
+
+      function buildWhy(): string {
+        const occ = (answers.quien && OCCASION_PHRASE[answers.quien]) || 'tu plan de hoy';
+        const plan = (answers.plan && PLAN_PHRASE[answers.plan]) || '';
+        const food = (answers.comida && FOOD_PHRASE[answers.comida]) || '';
+        let sentence = `Para ${occ}`;
+        if (plan) sentence += `, ${plan}`;
+        sentence += `${food}.`;
+        return sentence;
       }
-      
-      // Scale: 1 -> 1.02 -> 1 with subtle spring physics
-      gsap.to(cardEl, {
-        scale: 1.02,
-        duration: 0.15,
-        ease: 'power1.out',
-        onComplete: () => {
-          gsap.to(cardEl, {
-            scale: 1,
-            duration: 0.3,
-            ease: 'back.out(1.5)' // subtle spring
-          });
-          
-          setTimeout(() => {
-            if (currentStepIndex < stepsData.length - 1) {
-              currentStepIndex++;
-              renderStep(currentStepIndex, 1);
-            } else {
-              showResult(cardEl);
-            }
-          }, 150);
-        }
-      });
-    }
 
-    function showResult(selectedCardEl) {
-      const venue = pickVenue(selections);
-      const base = import.meta.env.BASE_URL;
+      /* ---------------------------------------------------------------
+         Geolocation — a soft, honest signal only. Uses one well-known
+         public reference point (Puerta del Sol, the real centre of
+         Madrid) to detect "are we roughly in central Madrid"; never
+         claims distance to any specific casa, since no venue in the
+         content model carries real coordinates. Silent on denial,
+         timeout, or an unsupported browser — the flow simply proceeds
+         as if "me da igual" had been chosen.
+         --------------------------------------------------------------- */
+      function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+        const R = 6371;
+        const dLat = ((lat2 - lat1) * Math.PI) / 180;
+        const dLon = ((lon2 - lon1) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      }
 
-      const html = `
-        <div class="result-venue">
-          <div class="result-venue__image-wrapper" data-result-image>
-            ${venue.hero
-              ? `<picture>
-              <source type="image/avif" srcset="${venue.hero.avif}" />
-              <source type="image/webp" srcset="${venue.hero.webp}" />
-              <img
-                src="${venue.hero.jpg}"
-                alt="${venue.name}"
-                loading="eager"
-                decoding="sync"
-              />
-            </picture>`
-              : ''}
-          </div>
-          <div class="result-venue__content" data-result-content>
-            <h4 class="result-venue__name">${venue.name}</h4>
-            <p class="result-venue__barrio">${venue.neighborhood}</p>
-            <p class="result-venue__why">${getWhyText(selections, venue)}</p>
-            
-            <div class="result-venue__actions">
-              <a href="${base}restaurantes/${venue.slug}/" class="btn btn--secondary">VER RESTAURANTE</a>
-              ${venue.bookingUrl ? `<a href="${venue.bookingUrl}" target="_blank" rel="noopener" class="btn btn--primary">RESERVAR MESA</a>` : ''}
-            </div>
-          </div>
-        </div>
-      `;
-
-      resultCardEl.innerHTML = html;
-
-      const cardRect = selectedCardEl.getBoundingClientRect();
-      
-      gsap.to([mainHeader, stepsWrapper], {
-        opacity: 0,
-        duration: 0.3,
-        ease: 'power2.inOut',
-        onComplete: () => {
-          mainHeader.hidden = true;
-          stepsWrapper.hidden = true;
-          resultEl.hidden = false;
-
-          const resultImage = resultEl.querySelector('[data-result-image]');
-          const resultContent = resultEl.querySelector('[data-result-content]');
-          const resultTitle = resultEl.querySelector('.result-title');
-          
-          const imgRect = resultImage.getBoundingClientRect();
-          
-          const dx = cardRect.left - imgRect.left;
-          const dy = cardRect.top - imgRect.top;
-          
-          gsap.fromTo(resultTitle, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' });
-          
-          gsap.fromTo(resultImage, 
-            { 
-              x: dx, 
-              y: dy, 
-              scale: 1.05,
-              opacity: 0
+      function requestGeo(): Promise<boolean> {
+        if (!('geolocation' in navigator)) return Promise.resolve(false);
+        return new Promise((resolve) => {
+          let settled = false;
+          const done = (v: boolean) => {
+            if (settled) return;
+            settled = true;
+            resolve(v);
+          };
+          const timer = window.setTimeout(() => done(false), 3000);
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              window.clearTimeout(timer);
+              const SOL = { lat: 40.4169, lon: -3.7035 };
+              const km = haversineKm(pos.coords.latitude, pos.coords.longitude, SOL.lat, SOL.lon);
+              done(km < 3);
             },
-            { 
-              x: 0, 
-              y: 0, 
-              scale: 1, 
-              opacity: 1, 
-              duration: 0.45, 
-              ease: 'power2.out' 
+            () => {
+              window.clearTimeout(timer);
+              done(false);
+            },
+            { timeout: 2800, maximumAge: 300000 }
+          );
+        });
+      }
+
+      /* ---------------------------------------------------------------
+         Motion — the whole panel moves as one block (never per-child),
+         translateX 40px in the travel direction, 250–450ms, no bounce.
+         --------------------------------------------------------------- */
+      function reducedMotion() {
+        return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      }
+
+      /* A cancelled Animation — including one implicitly dropped when its
+         target is hidden or removed mid-flight — rejects its own .finished
+         with an AbortError. None of the animations here are ever awaited a
+         second time, so left alone that's an unhandled rejection on every
+         fast click-through or backgrounded tab. Every .animate() call in
+         this file is routed through here for that reason. */
+      function silence<T extends Animation>(anim: T): T {
+        anim.finished.catch(() => {});
+        return anim;
+      }
+
+      function pulseSelect(el: HTMLElement) {
+        if (reducedMotion()) return;
+        silence(
+          el.animate([{ scale: 1 }, { scale: 1.02 }, { scale: 1 }], { duration: 280, easing: 'ease-out' })
+        );
+      }
+
+      /* The page's own Page Visibility API — not our data — decides when
+         animations pause (e.g. the visitor alt-tabs mid-transition). Racing
+         against a hard timeout means the step still lands in its end state
+         instead of leaving the wizard stuck on a half-slid panel. */
+      function settle(anim: Animation, ms: number): Promise<unknown> {
+        return Promise.race([silence(anim).finished, new Promise((resolve) => window.setTimeout(resolve, ms))]);
+      }
+
+      async function swap(outEl: HTMLElement | null, inEl: HTMLElement, dir: 1 | -1) {
+        const distance = 40 * dir;
+        if (reducedMotion()) {
+          if (outEl) outEl.hidden = true;
+          inEl.hidden = false;
+          return;
+        }
+        if (outEl) {
+          const out = outEl.animate(
+            [
+              { transform: 'translateX(0)', opacity: 1 },
+              { transform: `translateX(${-distance}px)`, opacity: 0 },
+            ],
+            { duration: 260, easing: EASE_OUT, fill: 'forwards' }
+          );
+          await settle(out, 400);
+          outEl.hidden = true;
+          outEl.getAnimations().forEach((a) => a.cancel());
+        }
+        inEl.hidden = false;
+        const inAnim = inEl.animate(
+          [
+            { transform: `translateX(${distance}px)`, opacity: 0 },
+            { transform: 'translateX(0)', opacity: 1 },
+          ],
+          { duration: 380, easing: EASE_OUT, fill: 'both' }
+        );
+        await settle(inAnim, 520);
+        inEl.getAnimations().forEach((a) => a.cancel());
+      }
+
+      function updateProgress() {
+        dots.forEach((d, i) => {
+          d.classList.toggle('is-active', i === current);
+          d.classList.toggle('is-done', i < current);
+        });
+        backBtn.hidden = current === 0 && !zonaSubOpen;
+        restartTopBtn.hidden = current === 0;
+      }
+
+      function focusHeading(el: HTMLElement) {
+        const heading = el.matches('[data-result]') ? resultKicker : el.querySelector<HTMLElement>('.step__q');
+        heading?.focus({ preventScroll: true });
+      }
+
+      function markPersisted(stepEl: HTMLElement) {
+        const stepId = stepEl.dataset.stepId!;
+        const saved = answers[stepId];
+        stepEl.querySelectorAll<HTMLButtonElement>('.option').forEach((btn) => {
+          btn.setAttribute('aria-pressed', String(btn.dataset.option === saved));
+        });
+      }
+
+      async function goToStep(index: number, dir: 1 | -1) {
+        busy = true;
+        try {
+          const from = resultPanel.hidden ? steps[current] : resultPanel;
+          const to = steps[index];
+          current = index;
+          markPersisted(to);
+          await swap(from, to, dir);
+          updateProgress();
+          focusHeading(to);
+          const question = to.querySelector('.step__q')?.textContent ?? '';
+          announce.textContent = `Paso ${index + 1} de ${steps.length}: ${question}`;
+        } finally {
+          busy = false;
+        }
+      }
+
+      async function showResult() {
+        busy = true;
+        try {
+          const venue = pickVenue();
+          renderResult(venue);
+          await swap(steps[current], resultPanel, 1);
+          backBtn.hidden = false;
+          restartTopBtn.hidden = false;
+          dots.forEach((d) => d.classList.add('is-done'));
+          focusHeading(resultPanel);
+          announce.textContent = 'Tu recomendación está lista.';
+        } finally {
+          busy = false;
+        }
+      }
+
+      function renderResult(venue: any) {
+        const why = buildWhy();
+        const cta = venue.bookingUrl
+          ? `<a class="btn btn--stamp" href="${venue.bookingUrl}" target="_blank" rel="noopener" data-book="${venue.slug}">Reservar mesa</a>`
+          : venue.phone
+            ? `<a class="btn btn--stamp" href="tel:+34${venue.phone}">Llamar para reservar</a>`
+            : `<a class="btn btn--stamp" href="${base}restaurantes/${venue.slug}/">Ver disponibilidad</a>`;
+
+        resultCardSlot.innerHTML = `
+          <article class="result__card" data-venue>
+            <a class="result__image campo campo--${venue.accent}" href="${base}restaurantes/${venue.slug}/">
+              ${
+                venue.hero
+                  ? `<picture>
+                <source type="image/avif" srcset="${venue.hero.avif}" />
+                <source type="image/webp" srcset="${venue.hero.webp}" />
+                <img src="${venue.hero.jpg}" alt="Interior de ${venue.name}" loading="eager" decoding="async" fetchpriority="high" />
+              </picture>`
+                  : ''
+              }
+            </a>
+            <div class="result__body">
+              <h3 class="result__name" id="result-title" tabindex="-1">${venue.name}</h3>
+              <p class="result__hood label">${venue.neighborhood}</p>
+              <p class="result__tag voice">${venue.tagline}</p>
+              <p class="result__why">${why}</p>
+              <div class="result__actions">
+                <a class="btn" href="${base}restaurantes/${venue.slug}/">Ver restaurante</a>
+                ${cta}
+              </div>
+            </div>
+          </article>
+        `;
+
+        if (!reducedMotion()) {
+          const img = resultCardSlot.querySelector<HTMLElement>('img');
+          if (img) {
+            silence(
+              img.animate(
+                [
+                  { transform: 'scale(1.05)', opacity: 0 },
+                  { transform: 'scale(1)', opacity: 1 },
+                ],
+                { duration: 500, easing: EASE_OUT, fill: 'both' }
+              )
+            );
+          }
+        }
+      }
+
+      function resetAll() {
+        answers.quien = answers.plan = answers.comida = answers.zona = answers.barrio = null;
+        geoZoneBoost = false;
+        zonaSubOpen = false;
+        barriosSub.hidden = true;
+        barriosSub.querySelectorAll<HTMLButtonElement>('.option').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+        root!.querySelectorAll<HTMLButtonElement>('.option').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+        resultPanel.hidden = true;
+        resultCardSlot.innerHTML = '';
+        steps.forEach((s, i) => {
+          s.hidden = i !== 0;
+        });
+        current = 0;
+        updateProgress();
+        focusHeading(steps[0]);
+        announce.textContent = 'Volvemos a empezar.';
+        stage.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
+      }
+
+      /* ---------------------------------------------------------------
+         Wiring
+         --------------------------------------------------------------- */
+      steps.forEach((stepEl) => {
+        const stepId = stepEl.dataset.stepId!;
+        const optionButtons = Array.from(
+          stepEl.querySelectorAll<HTMLButtonElement>(':scope > .options > .option')
+        );
+
+        optionButtons.forEach((btn) => {
+          btn.addEventListener('click', async () => {
+            /* Set the instant a click is accepted, not once the delayed
+               goToStep/showResult call actually starts — otherwise a second
+               click landing during the 320–380ms pause before that call
+               still slips through and races it. */
+            if (busy) return;
+            busy = true;
+
+            const optionId = btn.dataset.option!;
+            optionButtons.forEach((b) => b.setAttribute('aria-pressed', 'false'));
+            btn.setAttribute('aria-pressed', 'true');
+            pulseSelect(btn);
+            answers[stepId] = optionId;
+
+            if (stepId === 'zona') {
+              if (optionId === 'barrio') {
+                zonaSubOpen = true;
+                backBtn.hidden = false;
+                barriosSub.hidden = false;
+                if (!reducedMotion()) {
+                  silence(
+                    barriosSub.animate(
+                      [
+                        { transform: 'translateY(8px)', opacity: 0 },
+                        { transform: 'translateY(0)', opacity: 1 },
+                      ],
+                      { duration: 320, easing: EASE_OUT }
+                    )
+                  );
+                }
+                barriosSub.querySelector<HTMLElement>('.option')?.focus();
+                busy = false; /* nothing pending — the next click is the barrio choice itself */
+                return;
+              }
+              if (optionId === 'ubicacion') {
+                btn.setAttribute('aria-busy', 'true');
+                const label = btn.querySelector('.option__label')!;
+                const original = label.textContent;
+                label.textContent = 'Buscando tu zona…';
+                geoZoneBoost = await requestGeo();
+                label.textContent = original;
+                btn.removeAttribute('aria-busy');
+              }
+              window.setTimeout(showResult, 320);
+              return;
             }
-          );
 
-          gsap.fromTo(resultContent,
-            { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out', delay: 0.15 }
-          );
-        }
-      });
-    }
-
-    function pickVenue(sels) {
-      let bestMatch = window.lamuccaVenues[0];
-      let maxScore = -1;
-
-      window.lamuccaVenues.forEach(v => {
-        let score = 0;
-        
-        if (sels.who === 'cita' && v.occasions.includes('pareja')) score += 2;
-        if (sels.who === 'amigos' && v.occasions.includes('amigos')) score += 2;
-        if (sels.who === 'familia' && v.occasions.includes('familia')) score += 2;
-        if (sels.who === 'trabajo' && v.occasions.includes('trabajo')) score += 2;
-
-        if (sels.mood === 'animado' && v.moods.includes('animado')) score += 2;
-        if (sels.mood === 'tranquila' && v.moods.includes('tranquilo')) score += 2;
-        if (sels.mood === 'madrid' && v.moods.includes('castizo')) score += 2;
-
-        if (sels.food === 'pizza' && v.character.some(c => c.toLowerCase().includes('pizza'))) score += 3;
-        if (sels.food === 'pizza' && v.name === 'Lamucca de Pez') score += 2;
-
-        if (score > maxScore) {
-          maxScore = score;
-          bestMatch = v;
-        }
+            window.setTimeout(() => {
+              if (current < steps.length - 1) goToStep(current + 1, 1);
+              else busy = false;
+            }, 380);
+          });
+        });
       });
 
-      return bestMatch;
-    }
+      barriosSub.querySelectorAll<HTMLButtonElement>('[data-barrio]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (busy) return;
+          busy = true;
+          barriosSub
+            .querySelectorAll<HTMLButtonElement>('[data-barrio]')
+            .forEach((b) => b.setAttribute('aria-pressed', 'false'));
+          btn.setAttribute('aria-pressed', 'true');
+          pulseSelect(btn);
+          answers.barrio = btn.dataset.barrio === 'any' ? null : btn.dataset.barrio!;
+          /* The sub-picker's own job is done — clear it so the first "Atrás"
+             from the result goes to step 4, not to silently re-collapsing an
+             already-resolved sub-picker (that stale flag was leaving back
+             navigation stuck on the result screen). */
+          zonaSubOpen = false;
+          window.setTimeout(showResult, 320);
+        });
+      });
 
-    function getWhyText(sels, venue) {
-      let text = "Para ";
-      
-      if (sels.who === 'cita') text += "una cita especial, ";
-      else if (sels.who === 'amigos') text += "una noche con amigos, ";
-      else if (sels.who === 'familia') text += "disfrutar en familia, ";
-      else if (sels.who === 'solo') text += "un momento para ti, ";
-      else text += "cualquier ocasión, ";
+      backBtn.addEventListener('click', () => {
+        if (busy) return;
+        if (zonaSubOpen) {
+          zonaSubOpen = false;
+          barriosSub.hidden = true;
+          backBtn.hidden = current === 0;
+          return;
+        }
+        if (!resultPanel.hidden) {
+          goToStep(steps.length - 1, -1);
+          return;
+        }
+        if (current > 0) goToStep(current - 1, -1);
+      });
 
-      text += "buena comida y ";
+      restartTopBtn.addEventListener('click', () => {
+        if (!busy) resetAll();
+      });
+      resultPanel.querySelector<HTMLButtonElement>('[data-restart]')!.addEventListener('click', () => {
+        if (!busy) resetAll();
+      });
 
-      if (sels.mood === 'animado') text += "un poco de movimiento.";
-      else if (sels.mood === 'tranquila') text += "un ambiente relajado.";
-      else if (sels.mood === 'madrid') text += "sentir la energía de Madrid.";
-      else text += "el mejor ambiente.";
-
-      return text;
+      updateProgress();
     }
   </script>
 </section>
 
 <style>
-  .find-mucca {
-    padding-block: var(--space-3xl);
-    background: var(--surface-page);
-    overflow: hidden;
-    position: relative;
+  .finder {
+    padding-block: var(--space-3xl) var(--space-2xl);
   }
 
-  .find-mucca__container {
-    max-width: var(--container-narrow);
-    margin: 0 auto;
-    padding-inline: var(--gutter);
+  .finder__title em {
+    font-style: italic;
+    color: var(--text-accent);
   }
 
-  .find-mucca__header {
-    text-align: center;
-    margin-bottom: var(--space-xl);
-  }
-
-  .find-mucca__title {
-    font-size: var(--step-3);
-    font-family: var(--font-display);
-    text-transform: uppercase;
-    letter-spacing: var(--track-tight);
-    line-height: var(--leading-title);
-    margin-bottom: var(--space-2xs);
-  }
-
-  .find-mucca__subtitle {
-    font-size: var(--step-1);
-    color: var(--text-tertiary);
-  }
-
-  .find-mucca__interactive {
-    max-width: 600px;
-    margin: 0 auto;
-    position: relative;
-    min-height: 480px;
-  }
-
-  .find-mucca__step-header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-s);
-    margin-bottom: var(--space-l);
-    min-height: 48px;
-  }
-
-  .btn-back {
-    background: transparent;
-    border: none;
-    color: var(--text-tertiary);
-    cursor: pointer;
-    padding: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: background var(--t-micro) var(--ease-out), color var(--t-micro) var(--ease-out);
-    margin-left: -12px;
-  }
-
-  .btn-back:hover {
+  /* The immersive stage — a raised surface distinct from the page, so the
+     wizard reads as a product, not another editorial block. */
+  .finder__stage {
     background: var(--surface-raised);
-    color: var(--text-primary);
+    border: var(--rule);
+    border-radius: var(--radius-card);
+    padding: var(--space-l) var(--gutter) var(--space-xl);
+    overflow: hidden;
   }
 
-  .find-mucca__question {
-    font-size: var(--step-2);
-    font-family: var(--font-display);
-    margin: 0;
-    letter-spacing: var(--track-title);
-  }
-
-  .find-mucca__options {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xs);
-  }
-
-  .option-card {
+  .finder__progress {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: 100%;
-    min-height: 72px;
-    padding: var(--space-m) var(--space-m);
-    background: var(--surface-raised);
-    border: var(--rule-width) solid var(--line);
-    border-radius: var(--radius-card);
-    cursor: pointer;
-    text-align: left;
-    transition: border-color var(--t-micro) var(--ease-out), background var(--t-micro) var(--ease-out);
-    will-change: transform;
+    gap: var(--space-s);
+    margin-bottom: var(--space-l);
+    min-height: 44px;
   }
 
-  .option-card:hover {
-    border-color: var(--text-primary);
-    background: var(--surface-page);
-  }
-
-  .option-label {
-    font-size: var(--step-1);
-    font-family: var(--font-text);
-    font-weight: var(--weight-medium);
-    color: var(--text-primary);
-  }
-
-  /* Result Styles */
-  .find-mucca__result {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-l);
-    position: absolute;
-    inset: 0;
-    width: 100%;
-  }
-
-  .result-header {
-    text-align: center;
-  }
-
-  .result-title {
-    font-size: var(--step--1);
-    color: var(--text-tertiary);
-    letter-spacing: var(--track-label);
-    text-transform: uppercase;
-    font-family: var(--font-text);
-    font-weight: var(--weight-label);
-  }
-
-  .result-venue {
-    background: var(--surface-raised);
-    border-radius: var(--radius-card);
-    overflow: hidden;
-    border: var(--rule-width) solid var(--line);
-    box-shadow: var(--shadow-print);
-  }
-
-  .result-venue__image-wrapper {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-    position: relative;
-    will-change: transform, opacity;
-    border-bottom: var(--rule-width) solid var(--line);
-  }
-
-  .result-venue__image-wrapper img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    opacity: 0.9;
-    mix-blend-mode: var(--img-blend);
-  }
-
-  .result-venue__content {
-    padding: var(--space-l);
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .result-venue__name {
-    font-size: var(--step-3);
-    font-family: var(--font-display);
-    text-transform: uppercase;
-    margin-bottom: 4px;
-    letter-spacing: var(--track-tight);
-  }
-
-  .result-venue__barrio {
-    font-size: var(--step--1);
-    color: var(--text-tertiary);
-    text-transform: uppercase;
-    letter-spacing: var(--track-label);
-    margin-bottom: var(--space-m);
-    font-family: var(--font-text);
-  }
-
-  .result-venue__why {
-    font-size: var(--step-0);
-    line-height: var(--leading-body);
-    color: var(--text-secondary);
-    max-width: 42ch;
-    margin: 0 auto var(--space-xl);
-    text-wrap: pretty;
-  }
-
-  .result-venue__actions {
-    display: flex;
-    gap: var(--space-m);
-    justify-content: center;
-    flex-wrap: wrap;
-    width: 100%;
-  }
-
-  .btn {
+  .finder__back,
+  .finder__restart {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    padding: 0.6em 1.5em;
-    border-radius: var(--radius-pill);
-    font-weight: var(--weight-stamp);
-    text-transform: uppercase;
-    letter-spacing: var(--track-stamp);
-    text-decoration: none;
-    font-size: var(--step--1);
-    min-height: 48px;
-    cursor: pointer;
+    gap: 0.4em;
+    min-height: 44px;
+    padding: 0.5em 0.9em;
+    border: 0;
+    background: none;
+    color: var(--text-secondary);
     font-family: var(--font-text);
-    transition: background var(--t-micro) var(--ease-out), color var(--t-micro) var(--ease-out), border-color var(--t-micro) var(--ease-out);
+    font-size: var(--step--1);
+    font-weight: var(--weight-label);
+    letter-spacing: var(--track-label);
+    text-transform: uppercase;
+    cursor: pointer;
   }
 
-  .btn--primary {
-    background: var(--stamp-fill);
-    color: var(--stamp-text);
-    border: var(--rule-width) solid var(--stamp-fill);
-  }
-  
-  .btn--primary:hover {
-    background: var(--stamp-fill-hover);
-    border-color: var(--stamp-fill-hover);
-  }
-
-  .btn--secondary {
-    background: transparent;
+  .finder__back:hover,
+  .finder__restart:hover,
+  .finder__back:focus-visible,
+  .finder__restart:focus-visible {
     color: var(--text-primary);
-    border: var(--rule-width) solid var(--text-primary);
   }
-  
-  .btn--secondary:hover {
+
+  .finder__back[hidden],
+  .finder__restart[hidden] {
+    visibility: hidden;
+  }
+
+  .finder__dots {
+    display: flex;
+    gap: var(--space-2xs);
+    list-style: none;
+    padding: 0;
+    margin: 0 auto;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--line);
+    transition: background var(--t-micro) var(--ease-out), transform var(--t-micro) var(--ease-out);
+  }
+
+  .dot.is-done {
+    background: var(--text-accent);
+  }
+
+  .dot.is-active {
     background: var(--text-primary);
+    transform: scale(1.3);
+  }
+
+  .finder__panels {
+    position: relative;
+  }
+
+  .step__q {
+    font-size: var(--step-2);
+    line-height: var(--leading-card);
+    margin: 0 0 var(--space-l);
+    max-width: 20ch;
+  }
+
+  .step__q:focus-visible {
+    outline: none; /* programmatic focus target, not a pointer-visible control */
+  }
+
+  .options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-s);
+  }
+
+  .option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    min-height: 108px;
+    padding: var(--space-m) var(--space-s);
+    border: var(--rule);
+    border-radius: var(--radius-field);
+    background: var(--surface-page);
+    color: var(--text-primary);
+    font-family: var(--font-text);
+    font-size: var(--step-0);
+    text-align: center;
+    text-wrap: balance;
+    cursor: pointer;
+    transition:
+      background var(--t-micro) var(--ease-out),
+      color var(--t-micro) var(--ease-out),
+      border-color var(--t-micro) var(--ease-out);
+  }
+
+  .option__icon {
+    font-size: 1.75rem;
+    line-height: 1;
+  }
+
+  .option[aria-pressed='true'] {
+    background: var(--text-primary);
+    border-color: var(--text-primary);
     color: var(--surface-page);
   }
 
-  .result-actions {
+  .option:focus-visible {
+    outline: 2px solid var(--text-accent);
+    outline-offset: 2px;
+  }
+
+  @media (hover: hover) {
+    .option:hover:not([aria-pressed='true']) {
+      border-color: var(--text-primary);
+    }
+  }
+
+  /* --- Elegir barrio: inline sub-picker --- */
+  .barrios-sub {
+    margin-top: var(--space-l);
+    padding-top: var(--space-l);
+    border-top: var(--rule);
+  }
+
+  .barrios-sub[hidden] {
+    display: none;
+  }
+
+  .barrios-sub__head {
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-s);
+  }
+
+  .options--compact {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2xs);
+  }
+
+  .option--compact {
+    flex-direction: row;
+    min-height: 44px;
+    padding: 0.6em 0.5em;
+    font-size: var(--step--1);
+  }
+
+  /* --- Result --- */
+  .result {
     text-align: center;
+  }
+
+  .result[hidden] {
+    display: none;
+  }
+
+  .result__kicker {
+    color: var(--text-accent);
+    margin-bottom: var(--space-m);
+  }
+
+  .result__kicker:focus-visible {
+    outline: none;
+  }
+
+  :global(.result__card) {
+    display: grid;
+    text-align: left;
+    border: var(--rule);
+    border-radius: var(--radius-card);
+    background: var(--surface-page);
+    overflow: hidden;
+    box-shadow: var(--shadow-print);
+  }
+
+  :global(.result__image) {
+    display: block;
+    --campo-ratio: 4 / 3;
+  }
+
+  :global(.result__image img),
+  :global(.result__image picture) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  :global(.result__body) {
+    padding: var(--space-l) var(--space-l) var(--space-xl);
+    display: grid;
+    gap: var(--space-xs);
+  }
+
+  :global(.result__name) {
+    font-size: var(--step-3);
+    line-height: var(--leading-card);
+  }
+
+  :global(.result__name:focus-visible) {
+    outline: none;
+  }
+
+  :global(.result__hood) {
+    color: var(--text-tertiary);
+  }
+
+  :global(.result__tag) {
+    color: var(--text-accent);
+    font-size: var(--step-1);
+  }
+
+  :global(.result__why) {
+    margin-top: var(--space-xs);
+    color: var(--text-secondary);
+    max-width: 44ch;
+  }
+
+  :global(.result__actions) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-s);
     margin-top: var(--space-m);
   }
 
-  .btn-restart {
-    background: transparent;
-    border: none;
-    color: var(--text-tertiary);
-    text-decoration: underline;
-    cursor: pointer;
-    font-size: var(--step--1);
-    padding: 8px;
-    min-height: 44px;
-    transition: color var(--t-micro) var(--ease-out);
-    font-family: var(--font-text);
+  .result__foot {
+    margin-top: var(--space-l);
   }
-  
-  .btn-restart:hover {
+
+  .link-reset {
+    border: 0;
+    background: none;
+    color: var(--text-tertiary);
+    font-family: var(--font-text);
+    font-size: var(--step--1);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    min-height: 44px;
+    padding: 0 var(--space-xs);
+  }
+
+  .link-reset:hover,
+  .link-reset:focus-visible {
     color: var(--text-primary);
   }
 
-  /* Mobile horizontal swipe */
-  @media (max-width: 700px) {
-    .find-mucca__interactive {
-      margin-inline: calc(var(--gutter) * -1);
-      padding-inline: var(--gutter);
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  @media (min-width: 700px) {
+    .options {
+      grid-template-columns: repeat(3, 1fr);
     }
 
-    .find-mucca__options {
-      flex-direction: row;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      padding-bottom: var(--space-m);
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-      margin-inline: calc(var(--gutter) * -1);
-      padding-inline: var(--gutter);
+    .options--compact {
+      grid-template-columns: repeat(4, 1fr);
     }
-    
-    .find-mucca__options::-webkit-scrollbar {
-      display: none;
+  }
+
+  @media (min-width: 900px) {
+    .finder__stage {
+      padding: var(--space-xl) var(--space-2xl) var(--space-2xl);
     }
 
-    .option-card {
-      flex: 0 0 85%;
-      scroll-snap-align: center;
-      height: 140px;
-      justify-content: center;
-      text-align: center;
+    .options {
+      grid-template-columns: repeat(5, 1fr);
     }
 
-    .result-venue__actions {
-      flex-direction: column;
+    .step__q {
+      font-size: var(--step-3);
     }
-    
-    .btn {
-      width: 100%;
+
+    :global(.result__card) {
+      grid-template-columns: 1fr 1fr;
+      align-items: stretch;
     }
-    
-    .find-mucca__result {
-      padding-inline: var(--gutter);
+
+    :global(.result__image) {
+      --campo-ratio: auto;
+      height: 100%;
     }
-    
-    .result-venue__content {
-      padding: var(--space-m);
+
+    :global(.result__body) {
+      align-content: center;
+      padding: var(--space-2xl);
+    }
+
+    :global(.result__name) {
+      font-size: var(--step-4);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dot.is-active {
+      transform: none;
     }
   }
 </style>

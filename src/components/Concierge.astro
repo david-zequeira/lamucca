@@ -607,8 +607,8 @@ const aiVenues = venues.map(v => ({
                 <div class="msg-card__meta">${v.neighborhood} · ${v.tagline}</div>
               </div>
               <div class="msg-card__actions">
-                ${v.bookingUrl 
-                  ? `<a href="${v.bookingUrl}" target="_blank" class="btn btn--stamp">Reservar</a>`
+                ${v.bookingUrl
+                  ? `<a href="${v.bookingUrl}" target="_blank" rel="noopener" class="btn btn--stamp" data-reserva-trigger="${v.slug}">Reservar</a>`
                   : ''}
                 <a href="${import.meta.env.BASE_URL}restaurantes/${v.slug}/" class="btn">Ver casa</a>
               </div>

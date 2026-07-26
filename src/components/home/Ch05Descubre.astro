@@ -517,10 +517,10 @@ const base = import.meta.env.BASE_URL;
       function renderResult(venue: any) {
         const why = buildWhy();
         const cta = venue.bookingUrl
-          ? `<a class="btn btn--stamp" href="${venue.bookingUrl}" target="_blank" rel="noopener" data-book="${venue.slug}">Reservar mesa</a>`
+          ? `<a class="btn btn--stamp" href="${venue.bookingUrl}" target="_blank" rel="noopener" data-book="${venue.slug}" data-reserva-trigger="${venue.slug}">Reservar mesa</a>`
           : venue.phone
-            ? `<a class="btn btn--stamp" href="tel:+34${venue.phone}">Llamar para reservar</a>`
-            : `<a class="btn btn--stamp" href="${base}restaurantes/${venue.slug}/">Ver disponibilidad</a>`;
+            ? `<a class="btn btn--stamp" href="tel:+34${venue.phone}" data-reserva-trigger="${venue.slug}">Llamar para reservar</a>`
+            : `<a class="btn btn--stamp" href="${base}restaurantes/${venue.slug}/" data-reserva-trigger="${venue.slug}">Ver disponibilidad</a>`;
 
         resultCardSlot.innerHTML = `
           <article class="result__card" data-venue>

@@ -4,21 +4,133 @@
  * Community as proof and invitation. The dictionary entry is quoted verbatim
  * from the brand's own homepage — never paraphrased.
  *
- * No counters are shown: the real numbers (pizzas served, euros donated) are the
- * brand's own device, but we don't have live data and will not invent figures.
+ * The storytelling sequence below pairs each vignette with a real casa (name,
+ * accent colour and photo all come from the verified `restaurants` collection
+ * — DESIGN-DECISIONS #006). The people themselves are illustrative placeholder
+ * personas, not real named customers or staff: there are no headshots or
+ * quotes on file to publish honestly yet, so each "portrait" is a printed
+ * initial stamp rather than an invented face. Swap `HISTORIAS` below for real
+ * photos, names and quotes — with consent — before this ships as fact rather
+ * than as design.
+ *
+ * No counters are shown: the real numbers (pizzas served, euros donated) are
+ * the brand's own device, but we don't have live data and will not invent
+ * figures.
  */
+import { getCollection } from 'astro:content';
+import { getImage } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Historia {
+  slug: string;
+  name: string;
+  role: string;
+  restaurantSlug: string;
+  plato: string;
+  frase: string;
+  historia: string;
+}
+
+/* Placeholder personas — see file header. Restaurant references are real. */
+const HISTORIAS: Historia[] = [
+  {
+    slug: 'elena',
+    name: 'Elena',
+    role: 'Clienta de toda la vida',
+    restaurantSlug: 'lamucca-de-prado',
+    plato: 'Pizza de boletus',
+    frase: 'Aquí no hay mesa mala.',
+    historia:
+      'Viene desde que abrió, primero con amigas y ahora con su hija. Pide siempre la de boletus y una copa de tinto: dice que la casa no ha cambiado ni un poco, y que eso es justo lo que le gusta.',
+  },
+  {
+    slug: 'diego',
+    name: 'Diego',
+    role: 'Camarero de sala',
+    restaurantSlug: 'en-bruto',
+    plato: 'El pan «Pam!» recién horneado',
+    frase: 'El buen rollo se sirve antes que la comida.',
+    historia:
+      'Lleva la sala desde que abrió el obrador. Lo primero que enseña a la gente nueva no es la carta: es a sonreír de verdad, aunque el turno vaya a tope.',
+  },
+  {
+    slug: 'marta',
+    name: 'Marta',
+    role: 'Jefa de cocina',
+    restaurantSlug: 'la-pescaderia',
+    plato: 'Lo que traiga la lonja ese día',
+    frase: 'La pizarra manda, no la carta.',
+    historia:
+      'Cambia el menú según lo que llega fresco por la mañana. Para ella cocinar aquí es menos una receta fija y más una conversación diaria con el mercado.',
+  },
+  {
+    slug: 'javier',
+    name: 'Javier',
+    role: 'Cliente habitual',
+    restaurantSlug: 'kiosco-magadan',
+    plato: 'Vermut y unas bravas',
+    frase: 'Vengo a desconectar, no a mirar el móvil.',
+    historia:
+      'Todos los viernes, la misma mesa junto a la barra. Dice que este kiosco es su manera particular de cerrar la semana antes de que empiece el fin de semana de verdad.',
+  },
+  {
+    slug: 'nuria',
+    name: 'Nuria',
+    role: 'Bartender',
+    restaurantSlug: 'club-fishermans',
+    plato: 'El cóctel de la casa, claro',
+    frase: 'Cada mesa me cuenta algo distinto.',
+    historia:
+      'Diez años detrás de la barra le han enseñado a leer una noche entera con solo mirar quién se sienta y cómo pide la primera copa.',
+  },
+];
+
+const allRestaurants = await getCollection('restaurants');
+const bySlug = new Map(allRestaurants.map((r) => [r.data.slug, r.data]));
+
+const fotos = import.meta.glob<{ default: ImageMetadata }>('../../assets/casas/*.jpg', {
+  eager: true,
+});
+
+const fotoPorSlug = Object.fromEntries(
+  await Promise.all(
+    HISTORIAS.map(async (h) => {
+      const foto = fotos[`../../assets/casas/${h.restaurantSlug}.jpg`]?.default;
+      if (!foto) return [h.restaurantSlug, null];
+      const [avif, webp, jpg] = await Promise.all([
+        getImage({ src: foto, width: 1200, format: 'avif' }),
+        getImage({ src: foto, width: 1200, format: 'webp' }),
+        getImage({ src: foto, width: 1200, format: 'jpeg' }),
+      ]);
+      return [h.restaurantSlug, { avif: avif.src, webp: webp.src, jpg: jpg.src }];
+    })
+  )
+);
+
+/* Filter out any persona whose casa reference doesn't resolve — never render
+   a story with a fabricated restaurant name. */
+const historias = HISTORIAS.filter((h) => bySlug.has(h.restaurantSlug)).map((h, i) => {
+  const casa = bySlug.get(h.restaurantSlug)!;
+  return {
+    ...h,
+    index: i,
+    casaName: casa.name,
+    accent: casa.accent,
+    foto: fotoPorSlug[h.restaurantSlug],
+  };
+});
+
+const base = import.meta.env.BASE_URL;
 ---
 
 <section class="muckeros" id="muckeros" aria-labelledby="muckeros-title">
   <div class="container">
     <header class="capitulo-head" data-reveal>
       <p class="capitulo-num label">Capítulo 07 — La gente</p>
-      <h2 class="capitulo-title" id="muckeros-title">
-        Esto tiene nombre:<br /><em>muckeros</em>
-      </h2>
+      <h2 class="capitulo-title" id="muckeros-title">Cada mesa tiene una historia.</h2>
       <p class="capitulo-sub">
-        Camareros, cocineras, panaderos y clientes de toda la vida. La misma
-        palabra para los que sirven y los que se sientan.
+        <em class="voice">Y esta es la nuestra.</em>&#32;Camareras, cocineros, panaderas
+        y clientes de toda la vida — la misma palabra para los que sirven y los que se sientan.
       </p>
     </header>
 
@@ -42,39 +154,159 @@
       </ol>
       <p class="diccionario__fuente label">Definición oficial de la casa</p>
     </article>
+  </div>
 
-    <div class="muckeros__grid">
-      <blockquote class="cita muckeros__cita" data-reveal>
-        <p>«Reivindicamos el valor de la sonrisa como la mayor virtud de nuestro equipo.»</p>
-        <cite>Lamucca</cite>
-      </blockquote>
+  <!-- ============================ LA SECUENCIA ============================ -->
+  <div class="historias" data-historias>
+    <!-- Desktop: sticky visual panel + scrolling list ----------------------- -->
+    <div class="historias-split container" data-historias-split>
+      <div class="historias-visual" data-historias-visual aria-hidden="true" data-reveal="portrait">
+        {historias.map((h, i) => (
+          <div class={`historias-visual__layer campo campo--${h.accent}${i === 0 ? ' is-active' : ''}`} data-layer={i}>
+            {h.foto && (
+              <picture>
+                <source type="image/avif" srcset={h.foto.avif} />
+                <source type="image/webp" srcset={h.foto.webp} />
+                <img src={h.foto.jpg} alt="" data-parallax decoding="async" loading={i === 0 ? 'eager' : 'lazy'} />
+              </picture>
+            )}
+            <span class="historias-visual__sello" style={`--sello-ink: var(--${h.accent})`}>{h.name.charAt(0)}</span>
+          </div>
+        ))}
 
-      <!-- El clasificado — careers, in their own recruiting words -->
-      <div class="clasificado muckeros__clasificado" data-reveal style="--reveal-delay: 120ms">
-        <p class="clasificado__head label">Se busca</p>
-        <p>
-          Gente enérgica, exigente, independiente… y una sonrisa imborrable.
-          Buscamos jefes de cocina, directores de restaurante, camareros y bartenders.
-        </p>
-        <p class="clasificado__cta">
-          <a class="muckeros__link label" href="https://www.lamuccacompany.com/trabaja-con-nosotros/" rel="noopener" target="_blank">
-            Trabaja con nosotros <span aria-hidden="true">→</span>
-          </a>
-        </p>
+        <div class="historias-visual__caption">
+          <p class="historias-visual__frase voice" data-visual-frase>«{historias[0]?.frase}»</p>
+          <p class="historias-visual__name label" data-visual-name>
+            {historias[0]?.name} — {historias[0]?.casaName}
+          </p>
+        </div>
+      </div>
+
+      <ol class="historias-list" data-historias-list>
+        {historias.map((h) => (
+          <li class="historia" data-historia data-index={h.index} data-frase={h.frase} data-caption={`${h.name} — ${h.casaName}`}>
+            <article class="historia__body" data-reveal>
+              <p class="historia__num label">0{h.index + 1}</p>
+              <h3 class="historia__name">{h.name}</h3>
+              <p class="historia__meta label">{h.role} · {h.casaName}</p>
+              <blockquote class="cita historia__cita">
+                <p>«{h.frase}»</p>
+              </blockquote>
+              <p class="historia__plato label">Plato favorito: {h.plato}</p>
+              <p class="historia__texto">{h.historia}</p>
+            </article>
+          </li>
+        ))}
+      </ol>
+    </div>
+
+    <!-- Mobile: normal vertical flow, image + text overlay ------------------ -->
+    <div class="historias-flow container" data-historias-flow>
+      {historias.map((h, i) => (
+        <article class="historia-card">
+          <div class={`historia-card__media campo campo--${h.accent}`} data-reveal="portrait" style={`--reveal-delay: ${(i % 2) * 80}ms`}>
+            {h.foto && (
+              <picture>
+                <source type="image/avif" srcset={h.foto.avif} />
+                <source type="image/webp" srcset={h.foto.webp} />
+                <img src={h.foto.jpg} alt={`Mesa en ${h.casaName}`} decoding="async" loading="lazy" />
+              </picture>
+            )}
+            <span class="historia-card__sello" style={`--sello-ink: var(--${h.accent})`}>{h.name.charAt(0)}</span>
+            <div class="historia-card__overlay" data-reveal style={`--reveal-delay: ${(i % 2) * 80 + 80}ms`}>
+              <p class="historia-card__frase voice">«{h.frase}»</p>
+              <p class="historia-card__name label">{h.name} — {h.casaName}</p>
+            </div>
+          </div>
+          <div class="historia-card__body">
+            <p class="historia-card__meta label">{h.role}</p>
+            <p class="historia-card__plato label">Plato favorito: {h.plato}</p>
+            <p class="historia-card__texto">{h.historia}</p>
+          </div>
+        </article>
+      ))}
+    </div>
+  </div>
+
+  <!-- ============================== EL CIERRE ============================== -->
+  <div class="container">
+    <div class="muckeros__cierre" data-reveal>
+      <p class="muckeros__cierre-pregunta voice">¿Y tú?</p>
+      <h3 class="muckeros__cierre-title">¿Cuál es tu sitio?</h3>
+      <div class="muckeros__cierre-ctas">
+        <a class="btn" href={`${base}#descubre`}>Descubre La Mucca</a>
+        <a class="btn btn--stamp" href={`${base}#reserva`}>Reservar mesa</a>
       </div>
     </div>
 
-    <p class="muckeros__cta" data-reveal>
-      <a class="btn" href="https://www.instagram.com/lamucca" rel="noopener" target="_blank">
-        Hazte muckero en Instagram
-      </a>
-    </p>
+    <!-- El clasificado — careers, in their own recruiting words -->
+    <div class="clasificado muckeros__clasificado" data-reveal>
+      <p class="clasificado__head label">Se busca</p>
+      <p>
+        Gente enérgica, exigente, independiente… y una sonrisa imborrable.
+        Buscamos jefes de cocina, directores de restaurante, camareros y bartenders.
+      </p>
+      <p class="clasificado__cta">
+        <a class="muckeros__link label" href="https://www.lamuccacompany.com/trabaja-con-nosotros/" rel="noopener" target="_blank">
+          Trabaja con nosotros <span aria-hidden="true">→</span>
+        </a>
+        <a class="muckeros__link label" href="https://www.instagram.com/lamucca" rel="noopener" target="_blank">
+          Hazte muckero en Instagram <span aria-hidden="true">→</span>
+        </a>
+      </p>
+    </div>
   </div>
 </section>
 
+<script>
+  /* Vanilla, no library — drives which story the sticky desktop panel shows.
+     CSS owns every crossfade transition; this only decides which layer is
+     active. No-ops harmlessly on mobile, where .historias-split is display:none
+     and its IntersectionObserver entries never fire isIntersecting. */
+  const root = document.querySelector<HTMLElement>('[data-historias]');
+
+  if (root && 'IntersectionObserver' in window) {
+    const visual = root.querySelector<HTMLElement>('[data-historias-visual]');
+    const items = Array.from(root.querySelectorAll<HTMLElement>('[data-historia]'));
+    const layers = visual
+      ? Array.from(visual.querySelectorAll<HTMLElement>('.historias-visual__layer'))
+      : [];
+    const captionFrase = visual?.querySelector<HTMLElement>('[data-visual-frase]');
+    const captionName = visual?.querySelector<HTMLElement>('[data-visual-name]');
+
+    if (visual && items.length && layers.length) {
+      let activeIndex = 0;
+
+      const setActive = (index: number) => {
+        if (index === activeIndex && layers[index]?.classList.contains('is-active')) return;
+        activeIndex = index;
+        layers.forEach((layer, i) => layer.classList.toggle('is-active', i === index));
+        const item = items[index];
+        if (item && captionFrase && captionName) {
+          captionFrase.textContent = `«${item.dataset.frase ?? ''}»`;
+          captionName.textContent = item.dataset.caption ?? '';
+        }
+      };
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            const index = Number((entry.target as HTMLElement).dataset.index);
+            if (!Number.isNaN(index)) setActive(index);
+          });
+        },
+        { rootMargin: '-45% 0px -45% 0px', threshold: 0 }
+      );
+
+      items.forEach((item) => observer.observe(item));
+    }
+  }
+</script>
+
 <style>
   .muckeros {
-    padding-block: var(--space-2xl);
+    padding-block: var(--space-2xl) 0;
   }
 
   /* --- El diccionario --- */
@@ -84,6 +316,7 @@
     border-radius: var(--radius-card);
     padding: var(--space-xl) var(--space-l);
     max-width: 44rem;
+    margin-top: var(--space-xl);
   }
 
   .diccionario__word {
@@ -118,19 +351,181 @@
     color: var(--text-tertiary);
   }
 
-  /* --- Grid --- */
-  .muckeros__grid {
-    display: grid;
-    gap: var(--space-xl);
+  /* --- El sello — the printed-initial stand-in for a portrait ------------- */
+  .historias-visual__sello,
+  .historia-card__sello {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    border-radius: 50%;
+    border: var(--rule-width) solid var(--paper);
+    background: var(--sello-ink, var(--tomato));
+    color: var(--paper);
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: var(--weight-display);
+    rotate: var(--stamp-rotation);
+    box-shadow: 0 4px 0 -1px rgb(32 27 22 / 0.5);
+  }
+
+  .historias-visual__sello {
+    top: var(--space-m);
+    left: var(--space-m);
+    width: 4.5rem;
+    height: 4.5rem;
+    font-size: var(--step-3);
+  }
+
+  .historia-card__sello {
+    top: var(--space-s);
+    left: var(--space-s);
+    width: 3rem;
+    height: 3rem;
+    font-size: var(--step-1);
+  }
+
+  /* =========================================================================
+     LA SECUENCIA — shared bits
+     ========================================================================= */
+  .historias {
     margin-top: var(--space-2xl);
   }
 
-  .muckeros__cita p {
-    max-width: 20ch;
+  /* Precise 20px offset per the storytelling spec (the shared reveal system
+     defaults to 24px — close, but this section asked for an exact figure). */
+  .historia__body[data-reveal],
+  .historia-card__overlay[data-reveal] {
+    transform: translateY(20px);
+  }
+
+  .historia__cita {
+    margin: var(--space-m) 0;
+  }
+
+  .historia__cita p {
+    font-size: var(--step-2);
+    max-width: 26ch;
+  }
+
+  /* =========================================================================
+     MOBILE — normal vertical flow. Every card open, image + text overlay.
+     ========================================================================= */
+  .historias-split {
+    display: none;
+  }
+
+  .historias-flow {
+    display: grid;
+    gap: var(--space-xl);
+  }
+
+  .historia-card {
+    display: grid;
+    border: var(--rule);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    background: var(--surface-page);
+  }
+
+  .historia-card__media {
+    position: relative;
+    --campo-ratio: 4 / 5;
+  }
+
+  .historia-card__media :global(picture),
+  .historia-card__media :global(img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Bright editorial photography reads better in natural colour than
+     duotoned — the same reasoning already documented on the mobile venue
+     cards in Ch04MadridMapa.astro. */
+  .historia-card__media :global(img) {
+    object-fit: cover;
+    filter: none;
+  }
+
+  .historia-card__overlay {
+    position: absolute;
+    inset: auto 0 0 0;
+    z-index: 1;
+    padding: var(--space-m);
+    background: linear-gradient(180deg, rgb(32 27 22 / 0) 0%, rgb(32 27 22 / 0.85) 75%);
+  }
+
+  .historia-card__frase {
+    color: var(--paper);
+    font-size: var(--step-1);
+    line-height: var(--leading-quote);
+  }
+
+  .historia-card__name {
+    margin-top: var(--space-2xs);
+    color: rgb(244 238 227 / 0.8);
+  }
+
+  .historia-card__body {
+    padding: var(--space-l);
+    display: grid;
+    gap: var(--space-2xs);
+  }
+
+  .historia-card__meta {
+    color: var(--text-accent);
+  }
+
+  .historia-card__plato {
+    color: var(--text-tertiary);
+  }
+
+  .historia-card__texto {
+    margin-top: var(--space-xs);
+    color: var(--text-secondary);
+  }
+
+  /* =========================================================================
+     EL CIERRE — «¿Y tú? ¿Cuál es tu sitio?»
+     ========================================================================= */
+  .muckeros__cierre {
+    margin-top: var(--space-2xl);
+    padding-block: var(--space-xl);
+    border-top: var(--rule);
+    text-align: center;
+  }
+
+  .muckeros__cierre-pregunta {
+    font-size: var(--step-2);
+    color: var(--text-accent);
+  }
+
+  .muckeros__cierre-title {
+    margin-top: var(--space-2xs);
+    font-size: var(--step-5);
+    line-height: var(--leading-hero);
+  }
+
+  .muckeros__cierre-ctas {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-m);
+    margin-top: var(--space-l);
+  }
+
+  .muckeros__clasificado {
+    margin: var(--space-2xl) auto 0;
   }
 
   .clasificado__cta {
     margin-top: var(--space-m);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-m) var(--space-l);
   }
 
   .muckeros__link {
@@ -141,10 +536,6 @@
     text-decoration: none;
   }
 
-  .muckeros__cta {
-    margin-top: var(--space-xl);
-  }
-
   @media (hover: hover) {
     .muckeros__link:hover {
       text-decoration: underline;
@@ -152,11 +543,125 @@
     }
   }
 
+  /* =========================================================================
+     DESKTOP — sticky visual panel + scrolling list
+     ========================================================================= */
   @media (min-width: 900px) {
-    .muckeros__grid {
-      grid-template-columns: 1fr 1fr;
+    .historias-flow {
+      display: none;
+    }
+
+    .historias-split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
       gap: var(--space-2xl);
       align-items: start;
+    }
+
+    .historias-visual {
+      position: sticky;
+      top: calc(var(--nav-height-lg) + var(--space-l));
+      height: min(74vh, 44rem);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      box-shadow: var(--shadow-print);
+    }
+
+    .historias-visual__layer {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity var(--t-reveal) var(--ease-out);
+    }
+
+    .historias-visual__layer.is-active {
+      opacity: 1;
+    }
+
+    .historias-visual__layer :global(picture),
+    .historias-visual__layer :global(img) {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .historias-visual__layer :global(img) {
+      object-fit: cover;
+      filter: none;
+    }
+
+    .historias-visual__caption {
+      position: absolute;
+      inset: auto 0 0 0;
+      z-index: 3;
+      padding: var(--space-l);
+      background: linear-gradient(180deg, rgb(32 27 22 / 0) 0%, rgb(32 27 22 / 0.86) 70%);
+    }
+
+    .historias-visual__frase {
+      color: var(--paper);
+      font-size: var(--step-2);
+      line-height: var(--leading-quote);
+      max-width: 24ch;
+    }
+
+    .historias-visual__name {
+      margin-top: var(--space-2xs);
+      color: rgb(244 238 227 / 0.8);
+    }
+
+    .historias-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .historia {
+      min-height: 68vh;
+      display: flex;
+      align-items: center;
+      border-bottom: var(--hairline);
+    }
+
+    .historia:last-child {
+      border-bottom: 0;
+    }
+
+    .historia__body {
+      padding-block: var(--space-xl);
+      max-width: 44rem;
+    }
+
+    .historia__num {
+      color: var(--text-tertiary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .historia__name {
+      margin-top: var(--space-2xs);
+      font-size: var(--step-4);
+    }
+
+    .historia__meta {
+      margin-top: var(--space-2xs);
+      color: var(--text-accent);
+    }
+
+    .historia__plato {
+      color: var(--text-tertiary);
+    }
+
+    .historia__texto {
+      margin-top: var(--space-xs);
+      color: var(--text-secondary);
+      max-width: 52ch;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .historias-visual__layer {
+      transition: none;
     }
   }
 </style>

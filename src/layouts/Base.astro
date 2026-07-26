@@ -8,6 +8,7 @@ import '../styles/press.css';
 import '../styles/motion.css';
 
 import Concierge from '../components/Concierge.astro';
+import Reserva from '../components/Reserva.astro';
 
 interface Props {
   title: string;
@@ -69,6 +70,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://david-zeque
     <slot />
 
     <Concierge />
+    <Reserva />
 
     <script>
       import '../scripts/motion.js';

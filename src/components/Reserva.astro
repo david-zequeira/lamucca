@@ -1,0 +1,513 @@
+---
+/**
+ * EL RESERVADOR — the compact booking widget.
+ *
+ * One shared, persistent panel (rendered once in Base.astro, like
+ * Concierge.astro) that any "Reservar" control on the site can open instead
+ * of jumping straight to an external link. Any element carrying
+ * `data-reserva-trigger="<slug>"` (or `data-reserva-trigger=""` for no
+ * restaurant in mind) is intercepted on click; its real `href` stays in the
+ * markup as a working no-JS fallback.
+ *
+ * There is no real booking API to submit Fecha/Hora/Personas to — every
+ * venue's actual reservation system is its own CoverManager link (or a
+ * phone call). The widget collects those fields for the visitor's own
+ * clarity and hands off to the real link; it never pretends to transmit
+ * them anywhere (DESIGN-DECISIONS #006 — no invented capability).
+ */
+import { getCollection } from 'astro:content';
+
+const venues = (await getCollection('restaurants')).sort((a, b) => a.data.order - b.data.order);
+const clientVenues = venues.map((v) => ({
+  slug: v.data.slug,
+  name: v.data.name,
+  neighborhood: v.data.neighborhood,
+  bookingUrl: v.data.bookingUrl ?? null,
+  phone: v.data.phone ?? null,
+}));
+
+const base = import.meta.env.BASE_URL;
+---
+
+<div class="reserva-overlay" data-reserva hidden aria-hidden="true">
+  <div class="reserva-backdrop" data-reserva-dismiss></div>
+
+  <div
+    class="reserva-panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="reserva-widget-title"
+    data-reserva-panel
+  >
+    <span class="reserva-panel__grip" aria-hidden="true"></span>
+
+    <button type="button" class="reserva-panel__close" data-reserva-dismiss aria-label="Cerrar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 6L6 18M6 6l12 12" />
+      </svg>
+    </button>
+
+    <p class="label reserva-panel__kicker">Última pregunta</p>
+    <h2 class="reserva-panel__title" id="reserva-widget-title">¿Dónde cenamos?</h2>
+
+    <div class="reserva-field">
+      <label for="reserva-restaurante">Restaurante</label>
+      <select id="reserva-restaurante" data-reserva-restaurante>
+        <option value="" disabled selected>Elige un restaurante</option>
+        {clientVenues.map((v) => (
+          <option value={v.slug}>{v.name} — {v.neighborhood}</option>
+        ))}
+      </select>
+    </div>
+
+    <div class="reserva-grid">
+      <div class="reserva-field">
+        <label for="reserva-fecha">Fecha</label>
+        <input type="date" id="reserva-fecha" data-reserva-fecha />
+      </div>
+      <div class="reserva-field">
+        <label for="reserva-hora">Hora</label>
+        <input type="time" id="reserva-hora" data-reserva-hora value="21:00" />
+      </div>
+      <div class="reserva-field">
+        <label for="reserva-personas">Personas</label>
+        <div class="reserva-stepper">
+          <button type="button" data-reserva-menos aria-label="Menos personas">−</button>
+          <input
+            type="number"
+            id="reserva-personas"
+            data-reserva-personas
+            min="1"
+            max="20"
+            value="2"
+            inputmode="numeric"
+          />
+          <button type="button" data-reserva-mas aria-label="Más personas">+</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="reserva-panel__nota" data-reserva-nota aria-live="polite"></p>
+
+    <a class="btn btn--stamp reserva-panel__cta" data-reserva-cta target="_blank" rel="noopener">
+      Reservar mesa
+    </a>
+    <p class="reserva-panel__foot">
+      <a href={`${base}#reserva`} data-reserva-dismiss>¿No sabes cuál? Ver todas las casas</a>
+    </p>
+  </div>
+</div>
+
+<script is:inline define:vars={{ clientVenues, baseUrl: base }}>
+  window.lamuccaReservaVenues = clientVenues;
+  window.lamuccaReservaBase = baseUrl;
+</script>
+
+<script>
+  function initReserva() {
+    const overlay = document.querySelector<HTMLElement>('[data-reserva]');
+    if (!overlay || overlay.dataset.init) return;
+    overlay.dataset.init = 'true';
+
+    const venues = (window as any).lamuccaReservaVenues as
+      | { slug: string; name: string; neighborhood: string; bookingUrl: string | null; phone: string | null }[]
+      | undefined;
+    const base = (window as any).lamuccaReservaBase as string | undefined;
+    if (!venues || base === undefined) return;
+    const bySlug = new Map(venues.map((v) => [v.slug, v]));
+
+    const backdrop = overlay.querySelector<HTMLElement>('.reserva-backdrop')!;
+    const panel = overlay.querySelector<HTMLElement>('[data-reserva-panel]')!;
+    const dismissEls = Array.from(overlay.querySelectorAll<HTMLElement>('[data-reserva-dismiss]'));
+    const selectEl = overlay.querySelector<HTMLSelectElement>('[data-reserva-restaurante]')!;
+    const fechaEl = overlay.querySelector<HTMLInputElement>('[data-reserva-fecha]')!;
+    const horaEl = overlay.querySelector<HTMLInputElement>('[data-reserva-hora]')!;
+    const personasEl = overlay.querySelector<HTMLInputElement>('[data-reserva-personas]')!;
+    const menosBtn = overlay.querySelector<HTMLButtonElement>('[data-reserva-menos]')!;
+    const masBtn = overlay.querySelector<HTMLButtonElement>('[data-reserva-mas]')!;
+    const notaEl = overlay.querySelector<HTMLElement>('[data-reserva-nota]')!;
+    const ctaEl = overlay.querySelector<HTMLAnchorElement>('[data-reserva-cta]')!;
+
+    /* "Today" has to be computed in the browser: this page is built once and
+       served static, so a build-time Date() would freeze "today" at deploy
+       day forever. */
+    const today = new Date().toISOString().slice(0, 10);
+    fechaEl.min = today;
+    fechaEl.value = today;
+
+    let isOpen = false;
+    let lastTrigger: HTMLElement | null = null;
+
+    const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const currentVenue = () => bySlug.get(selectEl.value) ?? null;
+
+    function updateNota() {
+      const venue = currentVenue();
+      if (!venue) {
+        notaEl.textContent = '';
+        return;
+      }
+      const personas = personasEl.value || '2';
+      const fecha = fechaEl.value
+        ? new Date(`${fechaEl.value}T00:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })
+        : '';
+      const hora = horaEl.value;
+      const plural = personas === '1' ? 'persona' : 'personas';
+      const parts = [venue.name, fecha, hora && `${hora}h`, `${personas} ${plural}`].filter(Boolean);
+      notaEl.textContent = `${parts.join(' · ')}. Confirmas la disponibilidad en la web de reservas.`;
+    }
+
+    function updateCTA() {
+      const venue = currentVenue();
+      if (!venue) {
+        ctaEl.setAttribute('aria-disabled', 'true');
+        ctaEl.href = '#';
+        ctaEl.removeAttribute('target');
+        ctaEl.removeAttribute('rel');
+        ctaEl.textContent = 'Elige un restaurante';
+        updateNota();
+        return;
+      }
+      ctaEl.removeAttribute('aria-disabled');
+      if (venue.bookingUrl) {
+        ctaEl.href = venue.bookingUrl;
+        ctaEl.target = '_blank';
+        ctaEl.rel = 'noopener';
+        ctaEl.textContent = 'Reservar mesa';
+      } else if (venue.phone) {
+        ctaEl.href = `tel:+34${venue.phone}`;
+        ctaEl.removeAttribute('target');
+        ctaEl.removeAttribute('rel');
+        ctaEl.textContent = 'Llamar para reservar';
+      } else {
+        ctaEl.href = `${base}restaurantes/${venue.slug}/`;
+        ctaEl.removeAttribute('target');
+        ctaEl.removeAttribute('rel');
+        ctaEl.textContent = 'Ver disponibilidad';
+      }
+      updateNota();
+    }
+
+    function clampPersonas(delta: number) {
+      const next = Math.min(20, Math.max(1, (parseInt(personasEl.value, 10) || 2) + delta));
+      personasEl.value = String(next);
+      updateNota();
+    }
+
+    function focusables(): HTMLElement[] {
+      return Array.from(
+        panel.querySelectorAll<HTMLElement>('button, [href], input, select, [tabindex]:not([tabindex="-1"])')
+      ).filter((el) => !(el as HTMLButtonElement).disabled && el.offsetParent !== null);
+    }
+
+    function onKeydown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        close();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const list = focusables();
+      if (!list.length) return;
+      const first = list[0];
+      const last = list[list.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    function open(slug: string, trigger: HTMLElement | null) {
+      if (slug && bySlug.has(slug)) selectEl.value = slug;
+      updateCTA();
+
+      if (isOpen) return;
+      isOpen = true;
+      lastTrigger = trigger;
+
+      overlay.hidden = false;
+      overlay.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      document.addEventListener('keydown', onKeydown);
+
+      requestAnimationFrame(() => overlay.classList.add('is-open'));
+
+      window.setTimeout(
+        () => (selectEl.value ? fechaEl : selectEl).focus(),
+        reducedMotion() ? 0 : 280
+      );
+    }
+
+    function close() {
+      if (!isOpen) return;
+      isOpen = false;
+      overlay.classList.remove('is-open');
+      overlay.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', onKeydown);
+      lastTrigger?.focus();
+
+      window.setTimeout(
+        () => {
+          if (!overlay.classList.contains('is-open')) overlay.hidden = true;
+        },
+        reducedMotion() ? 0 : 320
+      );
+    }
+
+    dismissEls.forEach((el) => el.addEventListener('click', close));
+    selectEl.addEventListener('change', updateCTA);
+    fechaEl.addEventListener('change', updateNota);
+    horaEl.addEventListener('change', updateNota);
+    personasEl.addEventListener('change', () => {
+      personasEl.value = String(Math.min(20, Math.max(1, parseInt(personasEl.value, 10) || 2)));
+      updateNota();
+    });
+    menosBtn.addEventListener('click', () => clampPersonas(-1));
+    masBtn.addEventListener('click', () => clampPersonas(1));
+    ctaEl.addEventListener('click', (event) => {
+      if (ctaEl.getAttribute('aria-disabled') === 'true') {
+        event.preventDefault();
+        selectEl.focus();
+      }
+    });
+
+    /* Every "Reservar" control on the site — nav, venue pages, the map, the
+       finder wizard, the concierge — carries this same attribute and keeps
+       its real href as a no-JS fallback. */
+    document.addEventListener('click', (event) => {
+      const target = event.target as Element | null;
+      const trigger = target?.closest<HTMLElement>('[data-reserva-trigger]');
+      if (!trigger) return;
+      event.preventDefault();
+      open(trigger.dataset.reservaTrigger ?? '', trigger);
+    });
+  }
+
+  document.addEventListener('astro:page-load', initReserva);
+  initReserva();
+</script>
+
+<style>
+  .reserva-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-sheet);
+  }
+
+  .reserva-overlay[hidden] {
+    display: none !important;
+  }
+
+  .reserva-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgb(32 27 22 / 0.4);
+    opacity: 0;
+    transition: opacity var(--t-stamp) var(--ease-out);
+  }
+
+  .reserva-overlay.is-open .reserva-backdrop {
+    opacity: 1;
+  }
+
+  /* --- Desktop: a centred modal, scale + opacity --------------------- */
+  .reserva-panel {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    width: min(28rem, calc(100vw - var(--space-l)));
+    max-height: min(88vh, 42rem);
+    overflow-y: auto;
+    background: var(--surface-page);
+    border: var(--rule);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-print);
+    padding: var(--space-l);
+    opacity: 0;
+    transform: scale(0.98);
+    transition: opacity var(--t-stamp) var(--ease-out), transform var(--t-stamp) var(--ease-out);
+  }
+
+  .reserva-overlay.is-open .reserva-panel {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .reserva-panel__grip {
+    display: none;
+  }
+
+  .reserva-panel__close {
+    position: absolute;
+    top: var(--space-s);
+    right: var(--space-s);
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: var(--rule-width) solid var(--line);
+    background: var(--surface-page);
+    color: var(--text-primary);
+    cursor: pointer;
+  }
+
+  .reserva-panel__kicker {
+    color: var(--text-accent);
+    padding-right: var(--space-xl);
+  }
+
+  .reserva-panel__title {
+    margin-top: 2px;
+    font-size: var(--step-3);
+  }
+
+  .reserva-field {
+    display: grid;
+    gap: 4px;
+    margin-top: var(--space-m);
+  }
+
+  .reserva-field label {
+    font-family: var(--font-text);
+    font-size: var(--step--1);
+    font-weight: var(--weight-label);
+    letter-spacing: var(--track-label);
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+
+  .reserva-field select,
+  .reserva-field input[type='date'],
+  .reserva-field input[type='time'] {
+    min-height: 48px;
+    padding: 0.6em 0.7em;
+    border: var(--rule);
+    border-radius: var(--radius-field);
+    background: var(--surface-page);
+    font-family: var(--font-text);
+    font-size: var(--step-0);
+    color: var(--text-primary);
+  }
+
+  .reserva-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-m);
+  }
+
+  .reserva-grid .reserva-field:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .reserva-stepper {
+    display: flex;
+    align-items: stretch;
+    border: var(--rule);
+    border-radius: var(--radius-field);
+    overflow: hidden;
+  }
+
+  .reserva-stepper button {
+    width: 44px;
+    border: 0;
+    background: var(--surface-raised);
+    color: var(--text-primary);
+    font-size: var(--step-1);
+    cursor: pointer;
+  }
+
+  .reserva-stepper input {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    border: 0;
+    border-left: var(--hairline);
+    border-right: var(--hairline);
+    min-height: 48px;
+    background: var(--surface-page);
+    font-family: var(--font-text);
+    font-size: var(--step-0);
+    color: var(--text-primary);
+  }
+
+  .reserva-panel__nota {
+    margin-top: var(--space-m);
+    min-height: 1.4em;
+    font-size: var(--step--1);
+    color: var(--text-tertiary);
+  }
+
+  .reserva-panel__cta {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    margin-top: var(--space-s);
+    rotate: 0deg; /* contained in a compact panel — the stamp stays level */
+  }
+
+  .reserva-panel__cta[aria-disabled='true'] {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .reserva-panel__foot {
+    margin-top: var(--space-m);
+    text-align: center;
+  }
+
+  .reserva-panel__foot a {
+    color: var(--text-tertiary);
+    font-size: var(--step--1);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  @media (min-width: 480px) {
+    .reserva-grid {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .reserva-grid .reserva-field:last-child {
+      grid-column: auto;
+    }
+  }
+
+  /* --- Mobile: a bottom sheet, transform-only ------------------------- */
+  @media (max-width: 899px) {
+    .reserva-panel {
+      inset: auto 0 0 0;
+      margin: 0;
+      width: 100%;
+      max-height: min(85vh, 100%);
+      border-radius: var(--radius-card) var(--radius-card) 0 0;
+      padding-bottom: calc(var(--space-l) + env(safe-area-inset-bottom));
+      opacity: 1;
+      transform: translateY(100%);
+      transition: transform var(--t-stamp) var(--ease-out);
+    }
+
+    .reserva-overlay.is-open .reserva-panel {
+      transform: translateY(0);
+    }
+
+    .reserva-panel__grip {
+      display: block;
+      width: 40px;
+      height: 4px;
+      border-radius: 999px;
+      background: var(--line);
+      margin: 0 auto var(--space-m);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reserva-backdrop,
+    .reserva-panel {
+      transition: none;
+    }
+  }
+</style>

@@ -15,7 +15,8 @@
   "order": 18,
   "accent": "olive",
   "sources": [
-    "https://www.lamuccacompany.com/abre-lamucca-del-mar-en-mallorca/"
+    "https://www.lamuccacompany.com/abre-lamucca-del-mar-en-mallorca/",
+    "https://www.economiademallorca.com/articulo/empresas/lamucca-desembarca-mallorca-primer-restaurante-fuera-madrid/20250612201151108613.html"
   ],
   "verified": true,
   "moods": [
@@ -36,5 +37,6 @@
   ],
   "features": [
     "Junto al mar"
-  ]
+  ],
+  "openedYear": 2025
 }

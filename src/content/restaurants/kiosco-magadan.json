@@ -15,7 +15,8 @@
   "order": 17,
   "accent": "olive",
   "sources": [
-    "https://www.lamuccacompany.com/grupo-lamucca-recupera-el-historico-quiosco-magadan/"
+    "https://www.lamuccacompany.com/grupo-lamucca-recupera-el-historico-quiosco-magadan/",
+    "https://www.elespanol.com/madrid/ocio/20250418/segunda-vida-quiosco-pintor-rosales-famoso-grupo-resucita-dar-desayunos-tapas-sol-moncloa/1003743717665_0.html"
   ],
   "verified": true,
   "moods": [
@@ -39,5 +40,6 @@
   ],
   "features": [
     "Terraza"
-  ]
+  ],
+  "openedYear": 2025
 }

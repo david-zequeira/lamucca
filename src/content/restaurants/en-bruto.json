@@ -15,7 +15,8 @@
   "order": 14,
   "accent": "butter",
   "sources": [
-    "https://www.profesionalhoreca.com/2025/01/03/en-bruto-el-obrador-laboratorio-panaderia-y-cafeteria-de-lamucca-en-madrid/"
+    "https://www.profesionalhoreca.com/2025/01/03/en-bruto-el-obrador-laboratorio-panaderia-y-cafeteria-de-lamucca-en-madrid/",
+    "https://www.que.es/2022/11/14/disfrutar-de-la-kombucha-natural-en-madrid-ya-es-posible-con-en-bruto/"
   ],
   "verified": true,
   "moods": [
@@ -37,5 +38,6 @@
   "features": [
     "Café de especialidad",
     "Pan artesano"
-  ]
+  ],
+  "openedYear": 2022
 }

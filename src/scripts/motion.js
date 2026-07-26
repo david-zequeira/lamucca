@@ -179,34 +179,8 @@ export function initMotion() {
     );
   });
 
-  // === WOW 4: El Carrete ===
-  const carreteWrap = document.querySelector('[data-reel-scope]');
-  const carrete = document.querySelector('[data-reel]');
-  const progressFill = document.querySelector('[data-reel-progress]');
-  const ticks = document.querySelectorAll('[data-reel-tick]');
-
-  if (carreteWrap && carrete && progressFill) {
-    carrete.addEventListener('scroll', () => {
-      const maxScroll = carrete.scrollWidth - carrete.clientWidth;
-      const progress = maxScroll > 0 ? carrete.scrollLeft / maxScroll : 0;
-      gsap.to(progressFill, { scaleX: progress, duration: 0.1, ease: 'none' });
-
-      ticks.forEach((tick) => {
-        const host = tick.parentElement?.parentElement;
-        if (!host) return;
-        const tickLeft = host.offsetLeft;
-        if (carrete.scrollLeft + carrete.clientWidth * 0.8 > tickLeft) {
-          gsap.to(tick, { opacity: 1, scale: 1, duration: 0.4, ease: 'back.out(1.5)' });
-        } else {
-          gsap.to(tick, { opacity: 0.32, scale: 0.72, duration: 0.4, ease: 'power2.out' });
-        }
-      });
-    }, { passive: true });
-
-    gsap.set(progressFill, { scaleX: 0, transformOrigin: 'left center' });
-    gsap.set(ticks, { opacity: 0.32, scale: 0.72 });
-    carrete.dispatchEvent(new Event('scroll'));
-  }
+  // WOW 4 «El carrete» owns its own interaction — see CarreteCasas.astro.
+  // CSS handles every transition there; no GSAP timeline to register here.
 
   // Reveals: CSS + IntersectionObserver in Base.astro owns opacity.
   // Do NOT set GSAP opacity:0 here — that left whole chapters invisible on iOS.

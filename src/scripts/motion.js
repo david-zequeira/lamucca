@@ -10,70 +10,9 @@ export function initMotion() {
 
   const isMobile = window.matchMedia('(max-width: 899px)').matches;
 
-  // === WOW 1: La Tirada (Cinematic Entrance) ===
-  const masterTimeline = gsap.timeline({ delay: 0.1 });
-
-  const rule = document.querySelector('[data-print="rule"]');
-  if (rule) {
-    gsap.set(rule, { transformOrigin: 'left center' });
-    masterTimeline.fromTo(
-      rule,
-      { scaleX: 0 },
-      { scaleX: 1, duration: 0.8, ease: 'expo.out' },
-      0
-    );
-  }
-
-  const rises = document.querySelectorAll('[data-print="rise"]');
-  if (rises.length) {
-    masterTimeline.fromTo(
-      rises,
-      { y: 20, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.9, stagger: 0.08, ease: 'power3.out' },
-      0.1
-    );
-  }
-
-  const heroLines = document.querySelectorAll('[data-print="line"]');
-  if (heroLines.length) {
-    if (isMobile) {
-      // SplitType + heavy 3D motion clips badly under overflow on small screens
-      masterTimeline.fromTo(
-        heroLines,
-        { y: 18, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.9, stagger: 0.12, ease: 'power3.out' },
-        0.2
-      );
-    } else {
-      heroLines.forEach((line, index) => {
-        const split = new SplitType(line, { types: 'words, chars' });
-        line.style.clipPath = 'none';
-
-        masterTimeline.fromTo(
-          split.chars,
-          { y: 40, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            stagger: 0.02,
-            duration: 1.1,
-            ease: 'expo.out',
-          },
-          0.2 + index * 0.15
-        );
-      });
-    }
-  }
-
-  const stamp = document.querySelector('[data-print="sello"]');
-  if (stamp) {
-    masterTimeline.fromTo(
-      stamp,
-      { scale: 1.12, opacity: 0, rotation: 0 },
-      { scale: 1, opacity: 1, rotation: -6, duration: 0.55, ease: 'back.out(1.7)' },
-      0.75
-    );
-  }
+  // WOW 1 «La tirada» — the hero owns its own entrance now. It is pure CSS in
+  // Ch01Hero.astro, so it survives this bundle failing to load, and the
+  // headline animates per block rather than per character.
 
   // === WOW 2: La Mancha ===
   const mancha = document.querySelector('[data-ink-spread]');

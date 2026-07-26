@@ -12,9 +12,12 @@ import Concierge from '../components/Concierge.astro';
 interface Props {
   title: string;
   description: string;
+  /** Preload the hero poster. Only the home page paints one, and preloading it
+      everywhere spent a high-priority fetch on venue pages for nothing. */
+  preloadHero?: boolean;
 }
 
-const { title, description } = Astro.props;
+const { title, description, preloadHero = false } = Astro.props;
 const base = import.meta.env.BASE_URL;
 const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://david-zequeira.github.io');
 ---
@@ -35,9 +38,29 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://david-zeque
     <meta property="og:locale" content="es_ES" />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <!-- Performance: Preload Critical LCP Image -->
-    <link rel="preload" as="image" href={`${base}assets/hero-poster.webp`} type="image/webp" fetchpriority="high" />
-    
+    <!-- Performance: preload the LCP image — the hero poster. One per breakpoint,
+         so a phone never fetches the 16:9 still and vice versa. -->
+    {preloadHero && (
+      <>
+        <link
+          rel="preload"
+          as="image"
+          href={`${base}assets/hero-poster-mobile.webp`}
+          type="image/webp"
+          media="(max-width: 899px)"
+          fetchpriority="high"
+        />
+        <link
+          rel="preload"
+          as="image"
+          href={`${base}assets/hero-poster.webp`}
+          type="image/webp"
+          media="(min-width: 900px)"
+          fetchpriority="high"
+        />
+      </>
+    )}
+
     <!-- Performance: Preconnect to external analytics/booking if needed -->
     <!-- <link rel="preconnect" href="https://www.covermanager.com" crossorigin /> -->
   </head>

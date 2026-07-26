@@ -3,12 +3,12 @@
   "slug": "makaa",
   "concept": "makaa",
   "neighborhood": "Centro · Hotel Thompson",
-  "address": "Rooftop Hotel Thompson Madrid, Plaza del Carmen, Madrid",
+  "address": "Azotea del Hotel Thompson Madrid, Plaza del Carmen, Madrid",
   "city": "Madrid",
   "tagline": "Brasas sobre Gran Vía",
-  "description": "El rooftop del Hotel Thompson: carta de brasas de Andy Boman y Dani Álvarez, chill-out con piscina y barra panorámica sobre los tejados del centro. Desde finales de 2025.",
+  "description": "La azotea del Hotel Thompson: carta de brasas de Andy Boman y Dani Álvarez, piscina, zona de relax y barra panorámica sobre los tejados del centro. Desde finales de 2025.",
   "character": [
-    "Rooftop con piscina",
+    "Azotea con piscina",
     "Carta de brasas",
     "Vistas panorámicas"
   ],
@@ -39,7 +39,7 @@
     "pocos"
   ],
   "features": [
-    "Rooftop",
+    "Azotea",
     "Piscina"
   ]
 }

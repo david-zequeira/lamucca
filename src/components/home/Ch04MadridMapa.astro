@@ -55,7 +55,9 @@ const heroPorSlug = Object.fromEntries(
 const ZONES: Record<string, { label: string; cx: number; cy: number; r: number }> = {
   malasana: { label: 'Malasaña', cx: 34, cy: 46, r: 11 },
   centro: { label: 'Centro', cx: 54, cy: 58, r: 10 },
-  chamberi: { label: 'Chamberí', cx: 46, cy: 28, r: 8 },
+  chamberi: { label: 'Chamberí', cx: 46, cy: 23, r: 8 }, /* cy nudged up from 28
+    — at 28 its label sat close enough to Malasaña's own label above it that
+    the two visibly collided */
   salamanca: { label: 'Salamanca', cx: 76, cy: 52, r: 8 },
   norte: { label: 'Norte', cx: 66, cy: 12, r: 7 },
   oeste: { label: 'Oeste', cx: 14, cy: 62, r: 7 },
@@ -239,10 +241,40 @@ const first = clientVenues[0];
     </div>
   </div>
 
-  <!-- ===================== MOBILE: scroll-snap stack ====================== -->
+  <!-- ===================== MOBILE: static map + scroll-snap stack ===================== -->
+  <div class="mapa-mini container" data-mapa-mini>
+    <svg
+      class="mapa-mini__field"
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {Object.entries(ZONES).map(([key, z]) => (
+        <g class="mapa-district" data-district={key}>
+          <circle cx={z.cx} cy={z.cy} r={z.r} class="mapa-district__field" />
+          <text x={z.cx} y={z.cy - z.r - 1.5} class="mapa-district__label" text-anchor="middle">
+            {z.label}
+          </text>
+        </g>
+      ))}
+    </svg>
+    {clientVenues.map((v) => (
+      <button
+        type="button"
+        class={`mapa-pin mapa-pin--${v.accent}`}
+        data-mini-pin={v.slug}
+        style={`left:${v.pos.x}%; top:${v.pos.y}%`}
+      >
+        <span class="sr-only">Ir a {v.name}, {v.zoneLabel}</span>
+      </button>
+    ))}
+    <p class="mapa-mini__hint label">Toca un punto para ir directo a esa casa</p>
+  </div>
+
   <div class="mapa-stack" data-mapa-stack>
     {clientVenues.map((v, i) => (
-      <article class="mapa-card" data-venue data-reveal style={`--reveal-delay: ${(i % 3) * 60}ms`}>
+      <article class="mapa-card" data-venue data-card={v.slug} data-reveal style={`--reveal-delay: ${(i % 3) * 60}ms`}>
         <a class={`mapa-card__image campo campo--${v.accent}`} href={`${base}restaurantes/${v.slug}/`}>
           {v.hero && (
             <picture>
@@ -425,6 +457,15 @@ const first = clientVenues[0];
       });
 
       warmNeighbours(activeSlug);
+
+      /* --- Mobile mini-map: a lighter tap-to-scroll, not a second copy of
+         the desktop split-screen's crossfade/busy state machine. --- */
+      root.querySelectorAll<HTMLButtonElement>('[data-mini-pin]').forEach((pin) => {
+        pin.addEventListener('click', () => {
+          const card = root.querySelector<HTMLElement>(`[data-card="${pin.dataset.miniPin}"]`);
+          card?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'center' });
+        });
+      });
     }
   </script>
 </section>
@@ -456,8 +497,107 @@ const first = clientVenues[0];
   }
 
   /* ---------------------------------------------------------------------
-     MOBILE: scroll-snap stack (the default; hidden at 900px+)
+     SHARED: the district field and the pin. Used by both the interactive
+     desktop split-map and the static mobile mini-map, so they live outside
+     any breakpoint rather than duplicated inside one.
      --------------------------------------------------------------------- */
+  .mapa-district__field {
+    fill: var(--paper-deep);
+    stroke: var(--line);
+    stroke-width: 0.4;
+    opacity: 0.9;
+  }
+
+  .mapa-district__label {
+    font-family: var(--font-text);
+    font-size: 2.6px;
+    font-weight: var(--weight-label);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    fill: var(--text-secondary);
+  }
+
+  .mapa-pin {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    padding: 12px; /* visual dot stays small; hit target grows to 44px */
+    margin: -12px;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .mapa-pin::before {
+    content: '';
+    position: absolute;
+    inset: 12px;
+    border-radius: 50%;
+    background: var(--pin-ink, var(--tomato));
+    border: 2.5px solid var(--paper);
+    box-shadow: 0 2px 5px rgb(32 27 22 / 0.45);
+    transition: transform var(--t-micro) var(--ease-out);
+  }
+
+  .mapa-pin--tomato { --pin-ink: var(--tomato); }
+  .mapa-pin--butter { --pin-ink: var(--butter); }
+  .mapa-pin--olive { --pin-ink: var(--olive); }
+
+  .mapa-pin:focus-visible {
+    outline: 2px solid var(--text-accent);
+    outline-offset: 2px;
+    border-radius: 50%;
+  }
+
+  /* ---------------------------------------------------------------------
+     MOBILE: static mini-map + scroll-snap stack (the default; hidden at
+     900px+, where the interactive split-screen takes over instead)
+     --------------------------------------------------------------------- */
+  .mapa-mini {
+    position: relative;
+    aspect-ratio: 1;
+    margin-top: var(--space-xl);
+    border: var(--rule);
+    border-radius: var(--radius-card);
+    background: var(--surface-raised);
+    overflow: hidden;
+  }
+
+  .mapa-mini__field {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .mapa-mini .mapa-pin {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    min-height: 16px;
+    padding: 14px;
+    margin: -14px;
+  }
+
+  .mapa-mini .mapa-pin::before {
+    inset: 14px;
+    border-width: 2px;
+  }
+
+  .mapa-mini__hint {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: var(--space-2xs) var(--space-s);
+    background: color-mix(in srgb, var(--surface-page) 88%, transparent);
+    color: var(--text-tertiary);
+    text-align: center;
+  }
+
   .mapa-stack {
     display: grid;
     gap: var(--space-l);
@@ -477,7 +617,27 @@ const first = clientVenues[0];
 
   :global(.mapa-card__image) {
     display: block;
+    position: relative;
     --campo-ratio: 4 / 3;
+  }
+
+  /* The global .campo > img rule only matches a *direct* <img> child — this
+     markup wraps it in <picture> for AVIF/WebP, so without this the image
+     never gets sized (it rendered at its own intrinsic size, effectively
+     invisible behind the halftone field) and never got the two-ink
+     treatment every other casa photo on the site carries. */
+  :global(.mapa-card__image picture),
+  :global(.mapa-card__image img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  :global(.mapa-card__image img) {
+    object-fit: cover;
+    filter: var(--img-duotone-filter);
+    mix-blend-mode: var(--img-blend);
   }
 
   .mapa-card__body {
@@ -523,6 +683,7 @@ const first = clientVenues[0];
   }
 
   @media (min-width: 900px) {
+    .mapa-mini,
     .mapa-stack,
     .mapa-fuera {
       display: none;
@@ -558,59 +719,8 @@ const first = clientVenues[0];
       height: 100%;
     }
 
-    .mapa-district__field {
-      fill: var(--paper-deep);
-      stroke: var(--line);
-      stroke-width: 0.4;
-      opacity: 0.9;
-    }
-
-    .mapa-district__label {
-      font-family: var(--font-text);
-      font-size: 2.6px;
-      font-weight: var(--weight-label);
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      fill: var(--text-secondary);
-    }
-
-    .mapa-pin {
-      position: absolute;
-      transform: translate(-50%, -50%);
-      width: 22px;
-      height: 22px;
-      min-width: 22px;
-      min-height: 22px;
-      padding: 11px; /* visual dot stays small; hit target grows to 44px */
-      margin: -11px;
-      border: 0;
-      background: transparent;
-      cursor: pointer;
-    }
-
-    .mapa-pin::before {
-      content: '';
-      position: absolute;
-      inset: 11px;
-      border-radius: 50%;
-      background: var(--pin-ink, var(--tomato));
-      border: 2.5px solid var(--paper);
-      box-shadow: 0 2px 5px rgb(32 27 22 / 0.45);
-      transition: transform var(--t-micro) var(--ease-out);
-    }
-
-    .mapa-pin--tomato { --pin-ink: var(--tomato); }
-    .mapa-pin--butter { --pin-ink: var(--butter); }
-    .mapa-pin--olive { --pin-ink: var(--olive); }
-
     .mapa-pin:hover::before {
       transform: scale(1.15);
-    }
-
-    .mapa-pin:focus-visible {
-      outline: 2px solid var(--text-accent);
-      outline-offset: 2px;
-      border-radius: 50%;
     }
 
     .mapa-pin[aria-pressed='true']::before {

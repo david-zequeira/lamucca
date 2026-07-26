@@ -82,6 +82,37 @@
   transform: none;
 }
 
+/* Editorial portraits — a stronger scale-in than [data-reveal='field'] for
+   large storytelling imagery (Ch07 Muckeros). */
+.is-ready [data-reveal='portrait'] {
+  opacity: 0;
+  transform: scale(1.04);
+  transition:
+    opacity var(--t-enter) var(--ease-out),
+    transform 640ms var(--ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.is-ready [data-reveal='portrait'].is-in {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Gallery tiles — fade + rise + a subtle scale, combined (Ch06 La comida). */
+.is-ready [data-reveal='rise'] {
+  opacity: 0;
+  transform: translateY(24px) scale(0.97);
+  transition:
+    opacity var(--t-reveal) var(--ease-out),
+    transform var(--t-reveal) var(--ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.is-ready [data-reveal='rise'].is-in {
+  opacity: 1;
+  transform: none;
+}
+
 /* ---------------------------------------------------------------------------
    2. LOAD — WOW 1 «La tirada», the press run.
    Pure CSS: runs even if JS never executes. Only load animation on the site.
@@ -241,7 +272,9 @@
   .is-ready [data-reveal='line'],
   .is-ready [data-reveal='stamp'],
   .is-ready [data-reveal='rule'],
-  .is-ready [data-reveal='field'] {
+  .is-ready [data-reveal='field'],
+  .is-ready [data-reveal='portrait'],
+  .is-ready [data-reveal='rise'] {
     opacity: 1;
     transform: none;
     clip-path: none;

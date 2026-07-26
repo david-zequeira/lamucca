@@ -232,7 +232,7 @@ const first = clientVenues[0];
         <p class="mapa-panel__tag voice" data-panel-tag>{first.tagline}</p>
         <p class="mapa-panel__desc" data-panel-desc>{first.description}</p>
         <div class="mapa-panel__actions" data-panel-actions>
-          <a class="btn btn--stamp" href={first.bookingUrl ?? `${base}restaurantes/${first.slug}/`} data-panel-book target={first.bookingUrl ? '_blank' : undefined} rel={first.bookingUrl ? 'noopener' : undefined}>
+          <a class="btn btn--stamp" href={first.bookingUrl ?? `${base}restaurantes/${first.slug}/`} data-panel-book data-reserva-trigger={first.slug} target={first.bookingUrl ? '_blank' : undefined} rel={first.bookingUrl ? 'noopener' : undefined}>
             {first.bookingUrl ? 'Reservar mesa' : first.phone ? 'Llamar' : 'Ver disponibilidad'}
           </a>
           <a class="btn" href={`${base}#descubre`}>¿No sabes cuál? Encontrar mi sitio</a>
@@ -293,11 +293,11 @@ const first = clientVenues[0];
           <p class="mapa-card__desc">{v.description}</p>
           <div class="mapa-card__actions">
             {v.bookingUrl ? (
-              <a class="btn btn--stamp" href={v.bookingUrl} target="_blank" rel="noopener">Reservar mesa</a>
+              <a class="btn btn--stamp" href={v.bookingUrl} target="_blank" rel="noopener" data-reserva-trigger={v.slug}>Reservar mesa</a>
             ) : v.phone ? (
-              <a class="btn btn--stamp" href={`tel:+34${v.phone}`}>Llamar</a>
+              <a class="btn btn--stamp" href={`tel:+34${v.phone}`} data-reserva-trigger={v.slug}>Llamar</a>
             ) : (
-              <a class="btn btn--stamp" href={`${base}restaurantes/${v.slug}/`}>Ver disponibilidad</a>
+              <a class="btn btn--stamp" href={`${base}restaurantes/${v.slug}/`} data-reserva-trigger={v.slug}>Ver disponibilidad</a>
             )}
             <a class="btn" href={`${base}#descubre`}>Encontrar mi sitio</a>
           </div>
@@ -425,6 +425,7 @@ const first = clientVenues[0];
         descEl.textContent = v.description;
         bookLink.textContent = v.bookingUrl ? 'Reservar mesa' : v.phone ? 'Llamar' : 'Ver disponibilidad';
         bookLink.href = v.bookingUrl ?? (v.phone ? `tel:+34${v.phone}` : `${base}restaurantes/${v.slug}/`);
+        bookLink.dataset.reservaTrigger = v.slug;
         if (v.bookingUrl) {
           bookLink.target = '_blank';
           bookLink.rel = 'noopener';

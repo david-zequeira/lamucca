@@ -32,7 +32,7 @@ const links = [
     </nav>
 
     <div class="nav__actions">
-      <a href={`${base}#reserva`} class="btn btn--stamp nav__cta desktop-only">Reservar</a>
+      <a href={`${base}#reserva`} class="btn btn--stamp nav__cta desktop-only" data-reserva-trigger="">Reservar</a>
       <button
         class="nav__burger"
         type="button"
@@ -51,7 +51,7 @@ const links = [
 <!-- Mobile Bottom Bar for reachable CTA (home only — venues have their own) -->
 {!isVenuePage && (
   <div class="mobile-bottom-bar" data-mobile-bar>
-    <a href={`${base}#reserva`} class="btn btn--stamp mobile-bottom-bar__cta">Reservar mesa</a>
+    <a href={`${base}#reserva`} class="btn btn--stamp mobile-bottom-bar__cta" data-reserva-trigger="">Reservar mesa</a>
   </div>
 )}
 
@@ -63,7 +63,7 @@ const links = [
         {l.label}
       </a>
     ))}
-    <a href={`${base}#reserva`} class="btn btn--stamp overlay__cta" data-overlay-link>Reservar mesa</a>
+    <a href={`${base}#reserva`} class="btn btn--stamp overlay__cta" data-overlay-link data-reserva-trigger="">Reservar mesa</a>
   </nav>
 </div>
 

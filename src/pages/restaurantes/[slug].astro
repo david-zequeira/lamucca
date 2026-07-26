@@ -68,12 +68,12 @@ const phonePretty = d.phone?.replace(/(\d{2,3})(\d{3})(\d{2})(\d{2})$/, '$1 $2 $
 
         <div class="venue__cta">
           {d.bookingUrl ? (
-            <a class="btn btn--stamp" href={d.bookingUrl} rel="noopener" target="_blank">
+            <a class="btn btn--stamp" href={d.bookingUrl} rel="noopener" target="_blank" data-reserva-trigger={d.slug}>
               Reservar mesa
             </a>
           ) : (
             phonePretty && (
-              <a class="btn btn--stamp" href={`tel:+34${d.phone}`}>Llamar · {phonePretty}</a>
+              <a class="btn btn--stamp" href={`tel:+34${d.phone}`} data-reserva-trigger={d.slug}>Llamar · {phonePretty}</a>
             )
           )}
           <a class="btn" href={`${base}#descubre`}>Ver más casas</a>
@@ -86,7 +86,7 @@ const phonePretty = d.phone?.replace(/(\d{2,3})(\d{3})(\d{2})(\d{2})$/, '$1 $2 $
   {d.bookingUrl && (
     <div class="reserve-bar">
       <span class="reserve-bar__name">{d.name}</span>
-      <a class="btn btn--stamp reserve-bar__btn" href={d.bookingUrl} rel="noopener" target="_blank">
+      <a class="btn btn--stamp reserve-bar__btn" href={d.bookingUrl} rel="noopener" target="_blank" data-reserva-trigger={d.slug}>
         Reservar
       </a>
     </div>

@@ -121,6 +121,30 @@ export function initMotion() {
   // WOW 4 «El carrete» owns its own interaction — see CarreteCasas.astro.
   // CSS handles every transition there; no GSAP timeline to register here.
 
+  // Subtle image parallax (Ch07 Muckeros story panel). Desktop only — mobile
+  // and reduced-motion are already excluded above. Capped at ±10px so it
+  // reads as depth, not motion sickness.
+  if (!isMobile) {
+    const parallaxEls = document.querySelectorAll('[data-parallax]');
+    parallaxEls.forEach((el) => {
+      gsap.set(el, { scale: 1.08 });
+      gsap.fromTo(
+        el,
+        { y: -10 },
+        {
+          y: 10,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: el.closest('[data-historias-visual]') || el,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: true,
+          },
+        }
+      );
+    });
+  }
+
   // Reveals: CSS + IntersectionObserver in Base.astro owns opacity.
   // Do NOT set GSAP opacity:0 here — that left whole chapters invisible on iOS.
   requestAnimationFrame(() => ScrollTrigger.refresh());

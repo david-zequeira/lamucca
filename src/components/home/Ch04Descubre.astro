@@ -1,17 +1,19 @@
 ---
 /**
- * CHAPTER 04 — DESCUBRE TU LAMUCCA (The Concierge)
- * The signature product moment: A guided, editorial discovery experience.
- * Avoids the standard grid, providing a single tailored recommendation.
+ * CHAPTER 04 — ENCUENTRA TU MUCCA (Mood Discovery)
+ * The signature interactive experience: a four-step conversational wizard,
+ * not a form. Every dimension it scores against is grounded in data the
+ * content model already carries (moods/occasions/times/groups/zone) or in
+ * claims the site's own copy already makes — see `deriveDishes` below —
+ * never in invented per-venue facts (DESIGN-DECISIONS #006).
  */
 import { getCollection } from 'astro:content';
 import { getImage } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
+import type { CollectionEntry } from 'astro:content';
 
 const venues = (await getCollection('restaurants')).sort((a, b) => a.data.order - b.data.order);
 
-/* The card is built in the browser, so its imagery has to be resolved here:
-   Astro optimises src/assets at build time and only then knows the final URLs. */
 const fotos = import.meta.glob<{ default: ImageMetadata }>('../../assets/casas/*.jpg', {
   eager: true,
 });
@@ -31,340 +33,866 @@ const heroPorSlug = Object.fromEntries(
   )
 );
 
-// Pre-compute the data so the client-side script has it immediately available
-const clientVenues = venues.map(v => ({
+/* Dish signals the wizard's "¿qué te apetece comer?" step scores against.
+   Derived — never hand-tagged — from claims the site already makes elsewhere:
+     · pizza & vegetariano: Ch05Comida's own manifiesto/firmas state these are
+       true of the whole group ("en todas las casas" / "vegano o carnívoro"),
+       so every venue carries them.
+     · hamburguesa: brand-report.md's sourced "cosmopolitan comfort menu"
+       (pizza, nachos, burgers) describes the Lamucca-line houses specifically.
+     · compartir: the venues whose sourced description centres on shared
+       plates — Ultramarines' casquería, La Pescadería's arroces, Kiosco
+       Magadán's vermut-and-tapas terrace.
+   "Pasta" has no source anywhere in the content, so it scores nothing —
+   offered in the UI because the brief asks for it, but never used to claim
+   a venue serves it. */
+function deriveDishes(concept: string) {
+  return {
+    pizza: true,
+    vegetariano: true,
+    hamburguesa: concept === 'lamucca',
+    compartir: concept === 'ultramarines' || concept === 'pescaderia' || concept === 'kiosco',
+  };
+}
+
+const clientVenues = venues.map((v: CollectionEntry<'restaurants'>) => ({
   slug: v.data.slug,
   hero: heroPorSlug[v.data.slug],
   name: v.data.name,
   tagline: v.data.tagline,
   neighborhood: v.data.neighborhood,
-  address: v.data.address,
-  bookingUrl: v.data.bookingUrl,
-  moods: v.data.moods || [],
-  occasions: v.data.occasions || [],
-  times: v.data.times || [],
-  features: v.data.features || [],
-  character: v.data.character || [],
-  accent: v.data.accent || 'tomato'
+  phone: v.data.phone ?? null,
+  bookingUrl: v.data.bookingUrl ?? null,
+  moods: v.data.moods ?? [],
+  occasions: v.data.occasions ?? [],
+  times: v.data.times ?? [],
+  groups: v.data.groups ?? [],
+  zone: v.data.zone ?? null,
+  accent: v.data.accent ?? 'tomato',
+  dishes: deriveDishes(v.data.concept),
 }));
+
+interface Option {
+  id: string;
+  icon: string;
+  label: string;
+}
+
+interface Step {
+  id: string;
+  question: string;
+  options: Option[];
+}
+
+const STEPS: Step[] = [
+  {
+    id: 'quien',
+    question: '¿Con quién vienes?',
+    options: [
+      { id: 'cita', icon: '💕', label: 'Una cita' },
+      { id: 'amigos', icon: '👯', label: 'Amigos' },
+      { id: 'familia', icon: '👨‍👩‍👧', label: 'Familia' },
+      { id: 'solo', icon: '🧍', label: 'Solo' },
+      { id: 'trabajo', icon: '💼', label: 'Trabajo' },
+    ],
+  },
+  {
+    id: 'plan',
+    question: '¿Qué plan te apetece?',
+    options: [
+      { id: 'animado', icon: '🎉', label: 'Algo animado' },
+      { id: 'tranquila', icon: '🕯️', label: 'Una cena tranquila' },
+      { id: 'madrid', icon: '🎸', label: 'Una noche de Madrid' },
+      { id: 'compartir', icon: '🍽️', label: 'Para compartir' },
+      { id: 'hambre', icon: '🙌', label: 'Tengo hambre' },
+    ],
+  },
+  {
+    id: 'comida',
+    question: '¿Qué te apetece comer?',
+    options: [
+      { id: 'pizza', icon: '🍕', label: 'Pizza' },
+      { id: 'pasta', icon: '🍝', label: 'Pasta' },
+      { id: 'hamburguesa', icon: '🍔', label: 'Hamburguesa' },
+      { id: 'compartir', icon: '🥘', label: 'Para compartir' },
+      { id: 'vegetariano', icon: '🥗', label: 'Algo vegetariano' },
+    ],
+  },
+  {
+    id: 'zona',
+    question: '¿Por dónde te viene bien?',
+    options: [
+      { id: 'ubicacion', icon: '📍', label: 'Usar mi ubicación' },
+      { id: 'barrio', icon: '🗺️', label: 'Elegir barrio' },
+      { id: 'igual', icon: '🤷', label: 'Me da igual' },
+    ],
+  },
+];
+
+/* Real zones the content model already uses (src/content.config.ts) — not a
+   separate invented geography. "fuera" (Palma) is left off this picker: it's
+   reachable only through the other three answers, never something a Madrid
+   visitor would deliberately "elegir". */
+const BARRIOS = [
+  { zone: 'malasana', label: 'Malasaña' },
+  { zone: 'centro', label: 'Centro' },
+  { zone: 'chamberi', label: 'Chamberí' },
+  { zone: 'salamanca', label: 'Salamanca' },
+  { zone: 'norte', label: 'Norte' },
+  { zone: 'oeste', label: 'Oeste' },
+];
+
+const base = import.meta.env.BASE_URL;
 ---
 
-<section class="descubre" id="descubre" aria-labelledby="descubre-title">
-  <div class="container descubre__grid-layout">
-    <!-- Left Column: The Prompt -->
-    <div class="descubre__prompt">
-      <header class="capitulo-head" data-reveal>
-        <p class="capitulo-num label">Capítulo 04 — Encuentra tu casa</p>
-        <h2 class="capitulo-title" id="descubre-title">
-          ¿Qué te pide<br /><em>el cuerpo</em>?
-        </h2>
-        <p class="capitulo-sub">
-          Dinos tu plan. Nosotros te sentamos en la mesa perfecta.
-        </p>
-      </header>
+<section class="finder" id="descubre" aria-labelledby="finder-title" data-finder>
+  <div class="container">
+    <header class="capitulo-head finder__head" data-reveal>
+      <p class="capitulo-num label">Capítulo 04 — Encuentra tu casa</p>
+      <h2 class="capitulo-title finder__title" id="finder-title">
+        ¿Dónde <em>cenamos</em> hoy?
+      </h2>
+      <p class="capitulo-sub">Te ayudamos a encontrar tu sitio.</p>
+    </header>
 
-      <div class="intents" data-picker-intents data-reveal style="--reveal-delay: 150ms">
-        <button type="button" class="intent-btn" data-intent="dinner-friends">
-          <span class="intent-emoji" aria-hidden="true">👯</span>
-          <span class="intent-label">Cena con amigos</span>
+    <div class="finder__stage" data-reveal style="--reveal-delay: 120ms">
+      <div class="finder__progress">
+        <button type="button" class="finder__back" data-back hidden>
+          <span aria-hidden="true">←</span> Atrás
         </button>
-        <button type="button" class="intent-btn" data-intent="date-night">
-          <span class="intent-emoji" aria-hidden="true">✨</span>
-          <span class="intent-label">Cita romántica</span>
-        </button>
-        <button type="button" class="intent-btn" data-intent="after-work">
-          <span class="intent-emoji" aria-hidden="true">💼</span>
-          <span class="intent-label">Después del curro</span>
-        </button>
-        <button type="button" class="intent-btn" data-intent="family">
-          <span class="intent-emoji" aria-hidden="true">☀️</span>
-          <span class="intent-label">Comida en familia</span>
-        </button>
-        <button type="button" class="intent-btn" data-intent="drinks">
-          <span class="intent-emoji" aria-hidden="true">🍷</span>
-          <span class="intent-label">Tardeo y copas</span>
-        </button>
-        <button type="button" class="intent-btn" data-intent="pizza">
-          <span class="intent-emoji" aria-hidden="true">🍕</span>
-          <span class="intent-label">Antojo de pizza</span>
-        </button>
-        <button type="button" class="intent-btn" data-intent="madrid-night">
-          <span class="intent-emoji" aria-hidden="true">🎸</span>
-          <span class="intent-label">Noche por Madrid</span>
-        </button>
-        <button type="button" class="intent-btn" data-intent="just-hungry">
-          <span class="intent-emoji" aria-hidden="true">🍽️</span>
-          <span class="intent-label">Tengo hambre, sin más</span>
+        <ol class="finder__dots" aria-hidden="true">
+          {STEPS.map((_s, i) => (
+            <li class="dot" data-dot={i}></li>
+          ))}
+        </ol>
+        <button type="button" class="finder__restart" data-restart-top hidden>
+          Volver a empezar
         </button>
       </div>
-    </div>
 
-    <!-- Right Column: The Recommendation -->
-    <div class="descubre__result" data-picker-result>
-      <div class="concierge-empty" data-concierge-empty>
-        <p class="voice">Elige un plan para ver nuestra recomendación.</p>
-      </div>
-      <div class="concierge-card" data-concierge-card hidden>
-        <!-- Injected via script -->
+      <p class="sr-only" role="status" aria-live="polite" data-announce></p>
+
+      <div class="finder__panels">
+        {STEPS.map((step, i) => (
+          <div
+            class="step"
+            data-step={i}
+            data-step-id={step.id}
+            role="group"
+            aria-labelledby={`step-q-${step.id}`}
+            hidden={i !== 0}
+          >
+            <h3 class="step__q" id={`step-q-${step.id}`} tabindex="-1">{step.question}</h3>
+            <div class="options">
+              {step.options.map((o) => (
+                <button type="button" class="option" data-option={o.id} aria-pressed="false">
+                  <span class="option__icon" aria-hidden="true">{o.icon}</span>
+                  <span class="option__label">{o.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {step.id === 'zona' && (
+              <div class="barrios-sub" data-barrios-sub hidden>
+                <p class="barrios-sub__head label">¿Qué barrio?</p>
+                <div class="options options--compact">
+                  {BARRIOS.map((b) => (
+                    <button type="button" class="option option--compact" data-barrio={b.zone} aria-pressed="false">
+                      {b.label}
+                    </button>
+                  ))}
+                  <button type="button" class="option option--compact" data-barrio="any" aria-pressed="false">
+                    Cualquier zona
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        <div class="result" data-result hidden aria-labelledby="result-title">
+          <p class="result__kicker label" tabindex="-1" data-result-kicker>Creemos que tu sitio es...</p>
+          <div class="result__card-slot" data-result-card></div>
+          <p class="result__foot">
+            <button type="button" class="link-reset" data-restart>Volver a empezar</button>
+          </p>
+        </div>
       </div>
     </div>
   </div>
 
-  <script is:inline define:vars={{ venuesData: clientVenues }}>
-    window.lamuccaVenues = venuesData;
+  <script is:inline define:vars={{ venuesData: clientVenues, baseUrl: base }}>
+    window.lamuccaFinderVenues = venuesData;
+    window.lamuccaFinderBase = baseUrl;
   </script>
 
   <script>
-    import gsap from 'gsap';
+    /* Vanilla + WAAPI — the motion system's default engine (see motion.css
+       header). No new dependency for a feature this self-contained. */
+    const root = document.querySelector<HTMLElement>('[data-finder]');
+    const venues = (window as any).lamuccaFinderVenues as any[] | undefined;
+    const base = (window as any).lamuccaFinderBase as string | undefined;
 
-    const intentsConfig = {
-        'dinner-friends': {
-            match: (v) => v.occasions.includes('amigos') && v.times.includes('cena'),
-            why: 'Buscas una cena animada con amigos, y este local tiene el ambiente perfecto para compartir y alargar la noche.'
+    if (root && venues && base !== undefined) {
+      const STEP_IDS = ['quien', 'plan', 'comida', 'zona'];
+      const stage = root.querySelector<HTMLElement>('.finder__stage')!;
+      const panels = root.querySelector<HTMLElement>('.finder__panels')!;
+      const steps = Array.from(root.querySelectorAll<HTMLElement>('[data-step]'));
+      const dots = Array.from(root.querySelectorAll<HTMLElement>('[data-dot]'));
+      const backBtn = root.querySelector<HTMLButtonElement>('[data-back]')!;
+      const restartTopBtn = root.querySelector<HTMLButtonElement>('[data-restart-top]')!;
+      const announce = root.querySelector<HTMLElement>('[data-announce]')!;
+      const resultPanel = root.querySelector<HTMLElement>('[data-result]')!;
+      const resultKicker = root.querySelector<HTMLElement>('[data-result-kicker]')!;
+      const resultCardSlot = root.querySelector<HTMLElement>('[data-result-card]')!;
+      const zonaStep = root.querySelector<HTMLElement>('[data-step-id="zona"]')!;
+      const barriosSub = zonaStep.querySelector<HTMLElement>('[data-barrios-sub]')!;
+
+      const EASE_OUT = 'cubic-bezier(0.22, 1, 0.36, 1)'; /* mirrors --ease-out */
+      const answers: Record<string, string | null> = { quien: null, plan: null, comida: null, zona: null, barrio: null };
+      let current = 0;
+      let zonaSubOpen = false;
+      let geoZoneBoost = false;
+      /* Guards every transition below. Without it, a click landing while the
+         previous swap() is still resolving — a fast double-tap, or the
+         timers above simply running slower than their nominal duration —
+         starts a second goToStep on top of the first, and their hidden-flag
+         writes interleave into a genuinely broken multi-step-visible state. */
+      let busy = false;
+
+      /* ---------------------------------------------------------------
+         Scoring — every venue is scored across whichever steps have been
+         answered; highest score wins, ties broken at random. Never zero
+         candidates: step "quien" alone always separates at least a few
+         venues, and the fallback below covers any pathological tie.
+         --------------------------------------------------------------- */
+      const SCORERS: Record<string, Record<string, (v: any) => number>> = {
+        quien: {
+          cita: (v) => (v.occasions.includes('pareja') ? 3 : 0),
+          amigos: (v) => (v.occasions.includes('amigos') ? 3 : 0),
+          familia: (v) => (v.occasions.includes('familia') ? 3 : 0),
+          solo: (v) => (v.groups.includes('solo') ? 3 : 0),
+          trabajo: (v) => (v.occasions.includes('trabajo') ? 3 : 0),
         },
-        'date-night': {
-            match: (v) => v.occasions.includes('pareja'),
-            why: 'Buscas intimidad. Luces bajas, ambiente cuidado y un espacio donde poder hablar sin prisa.'
+        plan: {
+          animado: (v) => (v.moods.includes('animado') ? 3 : 0),
+          tranquila: (v) => (v.moods.includes('tranquilo') ? 3 : 0),
+          madrid: (v) => (v.moods.includes('castizo') ? 3 : v.times.includes('tarde') ? 1.5 : 0),
+          compartir: (v) => (v.dishes.compartir ? 3 : v.groups.includes('muchos') ? 1 : 0),
+          hambre: () => 0,
         },
-        'after-work': {
-            match: (v) => v.occasions.includes('trabajo') || v.times.includes('tardeo'),
-            why: 'Es hora de soltar el teclado. La transición perfecta de la oficina a la primera copa.'
+        comida: {
+          pizza: (v) => (v.dishes.pizza ? 1 : 0),
+          pasta: () => 0,
+          hamburguesa: (v) => (v.dishes.hamburguesa ? 3 : 0),
+          compartir: (v) => (v.dishes.compartir ? 3 : 0),
+          vegetariano: (v) => (v.dishes.vegetariano ? 1 : 0),
         },
-        'family': {
-            match: (v) => v.occasions.includes('familia'),
-            why: 'Espacio cómodo, luz natural y una carta donde todos en la familia encuentran su plato favorito.'
+        zona: {
+          ubicacion: (v) => (geoZoneBoost && ['centro', 'malasana', 'chamberi'].includes(v.zone) ? 1 : 0),
+          barrio: (v) => (answers.barrio && answers.barrio !== 'any' && v.zone === answers.barrio ? 2 : 0),
+          igual: () => 0,
         },
-        'drinks': {
-            match: (v) => v.times.includes('tardeo') && v.moods.includes('animado'),
-            why: 'La tarde se alarga. Buena música, barra dispuesta y un ambiente que va subiendo de volumen.'
-        },
-        'pizza': {
-            match: (v) => v.character.some(c => c.toLowerCase().includes('pizza')) || v.name === 'Lamucca de Pez',
-            why: 'El cuerpo te pide pizza. Aquí es donde nacieron nuestras míticas recetas al horno.'
-        },
-        'madrid-night': {
-            match: (v) => v.times.includes('tarde') || v.moods.includes('castizo'),
-            why: 'Quieres vivir Madrid. Castizo, auténtico y con la energía del barrio latiendo en la puerta.'
-        },
-        'just-hungry': {
-            match: (v) => true, // fallback matches all, we just shuffle
-            why: 'A veces no hace falta plan. Cocina ininterrumpida, producto de primera y un hueco siempre para ti.'
+      };
+
+      function scoreVenue(v: any): number {
+        let s = 0;
+        for (const stepId of STEP_IDS) {
+          const answer = answers[stepId];
+          if (!answer) continue;
+          const fn = SCORERS[stepId]?.[answer];
+          if (fn) s += fn(v);
         }
-    };
+        return s;
+      }
 
-    const container = document.querySelector('[data-picker-intents]');
-    const buttons = document.querySelectorAll('.intent-btn');
-    const emptyState = document.querySelector('[data-concierge-empty]');
-    const cardState = document.querySelector('[data-concierge-card]');
-    
-    // Fallback if component is missing
-    if (container && cardState && emptyState && window.lamuccaVenues) {
-      
-      buttons.forEach(btn => {
-        btn.addEventListener('click', () => {
-          // Update active state
-          buttons.forEach(b => b.setAttribute('aria-pressed', 'false'));
-          btn.setAttribute('aria-pressed', 'true');
+      function pickVenue() {
+        const scored = venues.map((v) => ({ v, s: scoreVenue(v) }));
+        const max = Math.max(...scored.map((x) => x.s));
+        const top = scored.filter((x) => x.s === max).map((x) => x.v);
+        return top[Math.floor(Math.random() * top.length)];
+      }
 
-          const intentKey = btn.getAttribute('data-intent');
-          const config = intentsConfig[intentKey];
+      /* ---------------------------------------------------------------
+         Why-text — built only from the visitor's own answers, never from
+         claims about the specific venue, so it can never say something
+         false. Mirrors the brand voice (docs/strategy/brand-strategy.md).
+         --------------------------------------------------------------- */
+      const OCCASION_PHRASE: Record<string, string> = {
+        cita: 'una cita',
+        amigos: 'una noche con amigos',
+        familia: 'un plan en familia',
+        solo: 'una comida a tu ritmo',
+        trabajo: 'una comida de trabajo',
+      };
+      const PLAN_PHRASE: Record<string, string> = {
+        animado: 'con ambiente animado y buena música',
+        tranquila: 'tranquila, para hablar con calma',
+        madrid: 'con ese punto castizo y madrileño',
+        compartir: 'de esas que se alargan compartiendo mesa',
+        hambre: 'sin complicarte la vida',
+      };
+      const FOOD_PHRASE: Record<string, string> = {
+        pizza: ' y buena pizza',
+        hamburguesa: ' y unas hamburguesas de las buenas',
+        compartir: ' para picar de todo',
+        vegetariano: ' cuidando también las opciones vegetarianas',
+      };
 
-          // Filter venues
-          let matches = window.lamuccaVenues.filter(config.match);
-          if (matches.length === 0) matches = window.lamuccaVenues; // Safety fallback
+      function buildWhy(): string {
+        const occ = (answers.quien && OCCASION_PHRASE[answers.quien]) || 'tu plan de hoy';
+        const plan = (answers.plan && PLAN_PHRASE[answers.plan]) || '';
+        const food = (answers.comida && FOOD_PHRASE[answers.comida]) || '';
+        let sentence = `Para ${occ}`;
+        if (plan) sentence += `, ${plan}`;
+        sentence += `${food}.`;
+        return sentence;
+      }
 
-          // Pick a random match to keep it playful and discoverable
-          const pick = matches[Math.floor(Math.random() * matches.length)];
+      /* ---------------------------------------------------------------
+         Geolocation — a soft, honest signal only. Uses one well-known
+         public reference point (Puerta del Sol, the real centre of
+         Madrid) to detect "are we roughly in central Madrid"; never
+         claims distance to any specific casa, since no venue in the
+         content model carries real coordinates. Silent on denial,
+         timeout, or an unsupported browser — the flow simply proceeds
+         as if "me da igual" had been chosen.
+         --------------------------------------------------------------- */
+      function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+        const R = 6371;
+        const dLat = ((lat2 - lat1) * Math.PI) / 180;
+        const dLon = ((lon2 - lon1) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      }
 
-          renderCard(pick, config.why);
+      function requestGeo(): Promise<boolean> {
+        if (!('geolocation' in navigator)) return Promise.resolve(false);
+        return new Promise((resolve) => {
+          let settled = false;
+          const done = (v: boolean) => {
+            if (settled) return;
+            settled = true;
+            resolve(v);
+          };
+          const timer = window.setTimeout(() => done(false), 3000);
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              window.clearTimeout(timer);
+              const SOL = { lat: 40.4169, lon: -3.7035 };
+              const km = haversineKm(pos.coords.latitude, pos.coords.longitude, SOL.lat, SOL.lon);
+              done(km < 3);
+            },
+            () => {
+              window.clearTimeout(timer);
+              done(false);
+            },
+            { timeout: 2800, maximumAge: 300000 }
+          );
+        });
+      }
 
-          // On mobile, scroll the result into view for better one-handed experience
-          if (window.innerWidth < 900) {
-            setTimeout(() => {
-              cardState.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }, 100);
+      /* ---------------------------------------------------------------
+         Motion — the whole panel moves as one block (never per-child),
+         translateX 40px in the travel direction, 250–450ms, no bounce.
+         --------------------------------------------------------------- */
+      function reducedMotion() {
+        return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      }
+
+      /* A cancelled Animation — including one implicitly dropped when its
+         target is hidden or removed mid-flight — rejects its own .finished
+         with an AbortError. None of the animations here are ever awaited a
+         second time, so left alone that's an unhandled rejection on every
+         fast click-through or backgrounded tab. Every .animate() call in
+         this file is routed through here for that reason. */
+      function silence<T extends Animation>(anim: T): T {
+        anim.finished.catch(() => {});
+        return anim;
+      }
+
+      function pulseSelect(el: HTMLElement) {
+        if (reducedMotion()) return;
+        silence(
+          el.animate([{ scale: 1 }, { scale: 1.02 }, { scale: 1 }], { duration: 280, easing: 'ease-out' })
+        );
+      }
+
+      /* The page's own Page Visibility API — not our data — decides when
+         animations pause (e.g. the visitor alt-tabs mid-transition). Racing
+         against a hard timeout means the step still lands in its end state
+         instead of leaving the wizard stuck on a half-slid panel. */
+      function settle(anim: Animation, ms: number): Promise<unknown> {
+        return Promise.race([silence(anim).finished, new Promise((resolve) => window.setTimeout(resolve, ms))]);
+      }
+
+      async function swap(outEl: HTMLElement | null, inEl: HTMLElement, dir: 1 | -1) {
+        const distance = 40 * dir;
+        if (reducedMotion()) {
+          if (outEl) outEl.hidden = true;
+          inEl.hidden = false;
+          return;
+        }
+        if (outEl) {
+          const out = outEl.animate(
+            [
+              { transform: 'translateX(0)', opacity: 1 },
+              { transform: `translateX(${-distance}px)`, opacity: 0 },
+            ],
+            { duration: 260, easing: EASE_OUT, fill: 'forwards' }
+          );
+          await settle(out, 400);
+          outEl.hidden = true;
+          outEl.getAnimations().forEach((a) => a.cancel());
+        }
+        inEl.hidden = false;
+        const inAnim = inEl.animate(
+          [
+            { transform: `translateX(${distance}px)`, opacity: 0 },
+            { transform: 'translateX(0)', opacity: 1 },
+          ],
+          { duration: 380, easing: EASE_OUT, fill: 'both' }
+        );
+        await settle(inAnim, 520);
+        inEl.getAnimations().forEach((a) => a.cancel());
+      }
+
+      function updateProgress() {
+        dots.forEach((d, i) => {
+          d.classList.toggle('is-active', i === current);
+          d.classList.toggle('is-done', i < current);
+        });
+        backBtn.hidden = current === 0 && !zonaSubOpen;
+        restartTopBtn.hidden = current === 0;
+      }
+
+      function focusHeading(el: HTMLElement) {
+        const heading = el.matches('[data-result]') ? resultKicker : el.querySelector<HTMLElement>('.step__q');
+        heading?.focus({ preventScroll: true });
+      }
+
+      function markPersisted(stepEl: HTMLElement) {
+        const stepId = stepEl.dataset.stepId!;
+        const saved = answers[stepId];
+        stepEl.querySelectorAll<HTMLButtonElement>('.option').forEach((btn) => {
+          btn.setAttribute('aria-pressed', String(btn.dataset.option === saved));
+        });
+      }
+
+      async function goToStep(index: number, dir: 1 | -1) {
+        busy = true;
+        try {
+          const from = resultPanel.hidden ? steps[current] : resultPanel;
+          const to = steps[index];
+          current = index;
+          markPersisted(to);
+          await swap(from, to, dir);
+          updateProgress();
+          focusHeading(to);
+          const question = to.querySelector('.step__q')?.textContent ?? '';
+          announce.textContent = `Paso ${index + 1} de ${steps.length}: ${question}`;
+        } finally {
+          busy = false;
+        }
+      }
+
+      async function showResult() {
+        busy = true;
+        try {
+          const venue = pickVenue();
+          renderResult(venue);
+          await swap(steps[current], resultPanel, 1);
+          backBtn.hidden = false;
+          restartTopBtn.hidden = false;
+          dots.forEach((d) => d.classList.add('is-done'));
+          focusHeading(resultPanel);
+          announce.textContent = 'Tu recomendación está lista.';
+        } finally {
+          busy = false;
+        }
+      }
+
+      function renderResult(venue: any) {
+        const why = buildWhy();
+        const cta = venue.bookingUrl
+          ? `<a class="btn btn--stamp" href="${venue.bookingUrl}" target="_blank" rel="noopener" data-book="${venue.slug}">Reservar mesa</a>`
+          : venue.phone
+            ? `<a class="btn btn--stamp" href="tel:+34${venue.phone}">Llamar para reservar</a>`
+            : `<a class="btn btn--stamp" href="${base}restaurantes/${venue.slug}/">Ver disponibilidad</a>`;
+
+        resultCardSlot.innerHTML = `
+          <article class="result__card" data-venue>
+            <a class="result__image campo campo--${venue.accent}" href="${base}restaurantes/${venue.slug}/">
+              ${
+                venue.hero
+                  ? `<picture>
+                <source type="image/avif" srcset="${venue.hero.avif}" />
+                <source type="image/webp" srcset="${venue.hero.webp}" />
+                <img src="${venue.hero.jpg}" alt="Interior de ${venue.name}" loading="eager" decoding="async" fetchpriority="high" />
+              </picture>`
+                  : ''
+              }
+            </a>
+            <div class="result__body">
+              <h3 class="result__name" id="result-title" tabindex="-1">${venue.name}</h3>
+              <p class="result__hood label">${venue.neighborhood}</p>
+              <p class="result__tag voice">${venue.tagline}</p>
+              <p class="result__why">${why}</p>
+              <div class="result__actions">
+                <a class="btn" href="${base}restaurantes/${venue.slug}/">Ver restaurante</a>
+                ${cta}
+              </div>
+            </div>
+          </article>
+        `;
+
+        if (!reducedMotion()) {
+          const img = resultCardSlot.querySelector<HTMLElement>('img');
+          if (img) {
+            silence(
+              img.animate(
+                [
+                  { transform: 'scale(1.05)', opacity: 0 },
+                  { transform: 'scale(1)', opacity: 1 },
+                ],
+                { duration: 500, easing: EASE_OUT, fill: 'both' }
+              )
+            );
           }
+        }
+      }
+
+      function resetAll() {
+        answers.quien = answers.plan = answers.comida = answers.zona = answers.barrio = null;
+        geoZoneBoost = false;
+        zonaSubOpen = false;
+        barriosSub.hidden = true;
+        barriosSub.querySelectorAll<HTMLButtonElement>('.option').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+        root!.querySelectorAll<HTMLButtonElement>('.option').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+        resultPanel.hidden = true;
+        resultCardSlot.innerHTML = '';
+        steps.forEach((s, i) => {
+          s.hidden = i !== 0;
+        });
+        current = 0;
+        updateProgress();
+        focusHeading(steps[0]);
+        announce.textContent = 'Volvemos a empezar.';
+        stage.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
+      }
+
+      /* ---------------------------------------------------------------
+         Wiring
+         --------------------------------------------------------------- */
+      steps.forEach((stepEl) => {
+        const stepId = stepEl.dataset.stepId!;
+        const optionButtons = Array.from(
+          stepEl.querySelectorAll<HTMLButtonElement>(':scope > .options > .option')
+        );
+
+        optionButtons.forEach((btn) => {
+          btn.addEventListener('click', async () => {
+            /* Set the instant a click is accepted, not once the delayed
+               goToStep/showResult call actually starts — otherwise a second
+               click landing during the 320–380ms pause before that call
+               still slips through and races it. */
+            if (busy) return;
+            busy = true;
+
+            const optionId = btn.dataset.option!;
+            optionButtons.forEach((b) => b.setAttribute('aria-pressed', 'false'));
+            btn.setAttribute('aria-pressed', 'true');
+            pulseSelect(btn);
+            answers[stepId] = optionId;
+
+            if (stepId === 'zona') {
+              if (optionId === 'barrio') {
+                zonaSubOpen = true;
+                backBtn.hidden = false;
+                barriosSub.hidden = false;
+                if (!reducedMotion()) {
+                  silence(
+                    barriosSub.animate(
+                      [
+                        { transform: 'translateY(8px)', opacity: 0 },
+                        { transform: 'translateY(0)', opacity: 1 },
+                      ],
+                      { duration: 320, easing: EASE_OUT }
+                    )
+                  );
+                }
+                barriosSub.querySelector<HTMLElement>('.option')?.focus();
+                busy = false; /* nothing pending — the next click is the barrio choice itself */
+                return;
+              }
+              if (optionId === 'ubicacion') {
+                btn.setAttribute('aria-busy', 'true');
+                const label = btn.querySelector('.option__label')!;
+                const original = label.textContent;
+                label.textContent = 'Buscando tu zona…';
+                geoZoneBoost = await requestGeo();
+                label.textContent = original;
+                btn.removeAttribute('aria-busy');
+              }
+              window.setTimeout(showResult, 320);
+              return;
+            }
+
+            window.setTimeout(() => {
+              if (current < steps.length - 1) goToStep(current + 1, 1);
+              else busy = false;
+            }, 380);
+          });
         });
       });
 
-      function renderCard(venue, whyText) {
-        const base = import.meta.env.BASE_URL;
-        // Build the HTML with responsive imagery placeholders
-        const html = `
-          <a class="campo campo--${venue.accent} concierge__hero vt-casa" href="${base}restaurantes/${venue.slug}/">
-            ${venue.hero
-              ? `<picture>
-              <source type="image/avif" srcset="${venue.hero.avif}" />
-              <source type="image/webp" srcset="${venue.hero.webp}" />
-              <img
-                src="${venue.hero.jpg}"
-                alt="Interior de ${venue.name}"
-                loading="lazy"
-                decoding="async"
-              />
-            </picture>`
-              : ''}
-          </a>
-          <div class="concierge__body">
-            <h3 class="concierge__title">Creemos que <strong>${venue.name}</strong> es tu sitio hoy.</h3>
-            <p class="concierge__why">${whyText}</p>
-            
-            <div class="concierge__meta">
-              <div class="meta-item">
-                <span class="label">Atmósfera</span>
-                <span class="value">${venue.moods.length ? venue.moods.join(', ') : 'Acogedor'}</span>
-              </div>
-              <div class="meta-item">
-                <span class="label">Ubicación</span>
-                <span class="value">${venue.neighborhood}</span>
-              </div>
-              <div class="meta-item">
-                <span class="label">Ideal para</span>
-                <span class="value">${venue.occasions.length ? venue.occasions.slice(0,2).join(', ') : 'Cualquier plan'}</span>
-              </div>
-              <div class="meta-item">
-                <span class="label">Destaca por</span>
-                <span class="value">${venue.character.length ? venue.character[0] : 'Nuestra carta abierta'}</span>
-              </div>
-            </div>
+      barriosSub.querySelectorAll<HTMLButtonElement>('[data-barrio]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (busy) return;
+          busy = true;
+          barriosSub
+            .querySelectorAll<HTMLButtonElement>('[data-barrio]')
+            .forEach((b) => b.setAttribute('aria-pressed', 'false'));
+          btn.setAttribute('aria-pressed', 'true');
+          pulseSelect(btn);
+          answers.barrio = btn.dataset.barrio === 'any' ? null : btn.dataset.barrio!;
+          /* The sub-picker's own job is done — clear it so the first "Atrás"
+             from the result goes to step 4, not to silently re-collapsing an
+             already-resolved sub-picker (that stale flag was leaving back
+             navigation stuck on the result screen). */
+          zonaSubOpen = false;
+          window.setTimeout(showResult, 320);
+        });
+      });
 
-            <div class="concierge__actions">
-              <span class="concierge__status">Cocina abierta</span>
-              ${venue.bookingUrl 
-                ? `<a href="${venue.bookingUrl}" target="_blank" rel="noopener" class="btn btn--stamp btn--editorial">Reservar mesa</a>`
-                : `<a href="${base}restaurantes/${venue.slug}/" class="btn btn--editorial">Ver la casa</a>`
-              }
-            </div>
-          </div>
-        `;
-
-        // Cross-fade animation with GSAP
-        if (!emptyState.hidden) {
-          // First time opening
-          gsap.to(emptyState, { 
-            opacity: 0, 
-            duration: 0.3, 
-            onComplete: () => {
-              emptyState.hidden = true;
-              cardState.innerHTML = html;
-              cardState.hidden = false;
-              gsap.fromTo(cardState, 
-                { opacity: 0, y: 30, scale: 0.98 },
-                { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: 'power3.out' }
-              );
-            }
-          });
-        } else {
-          // Switching between recommendations
-          gsap.to(cardState, {
-            opacity: 0,
-            y: 10,
-            duration: 0.2,
-            onComplete: () => {
-              cardState.innerHTML = html;
-              gsap.to(cardState, {
-                opacity: 1,
-                y: 0,
-                duration: 0.4,
-                ease: 'power2.out'
-              });
-            }
-          });
+      backBtn.addEventListener('click', () => {
+        if (busy) return;
+        if (zonaSubOpen) {
+          zonaSubOpen = false;
+          barriosSub.hidden = true;
+          backBtn.hidden = current === 0;
+          return;
         }
-      }
+        if (!resultPanel.hidden) {
+          goToStep(steps.length - 1, -1);
+          return;
+        }
+        if (current > 0) goToStep(current - 1, -1);
+      });
+
+      restartTopBtn.addEventListener('click', () => {
+        if (!busy) resetAll();
+      });
+      resultPanel.querySelector<HTMLButtonElement>('[data-restart]')!.addEventListener('click', () => {
+        if (!busy) resetAll();
+      });
+
+      updateProgress();
     }
   </script>
 </section>
 
 <style>
-  .descubre {
+  .finder {
     padding-block: var(--space-3xl) var(--space-2xl);
   }
 
-  .descubre__grid-layout {
-    display: grid;
-    gap: var(--space-2xl);
-    align-items: start;
+  .finder__title em {
+    font-style: italic;
+    color: var(--text-accent);
   }
 
-  /* --- Intents (The Picker) --- */
-  .intents {
+  /* The immersive stage — a raised surface distinct from the page, so the
+     wizard reads as a product, not another editorial block. */
+  .finder__stage {
+    background: var(--surface-raised);
+    border: var(--rule);
+    border-radius: var(--radius-card);
+    padding: var(--space-l) var(--gutter) var(--space-xl);
+    overflow: hidden;
+  }
+
+  .finder__progress {
     display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: var(--space-s);
-    margin-top: var(--space-xl);
-    
-    /* Mobile: Horizontal scroll for one-handed discovery */
-    overflow-x: auto;
-    padding-bottom: var(--space-s); /* Space for scrollbar */
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* Firefox */
-  }
-  
-  .intents::-webkit-scrollbar {
-    display: none; /* Safari and Chrome */
+    margin-bottom: var(--space-l);
+    min-height: 44px;
   }
 
-  .intent-btn {
-    flex: 0 0 auto; /* Prevent shrinking in horizontal scroll */
-    scroll-snap-align: start;
+  .finder__back,
+  .finder__restart {
     display: inline-flex;
     align-items: center;
+    gap: 0.4em;
+    min-height: 44px;
+    padding: 0.5em 0.9em;
+    border: 0;
+    background: none;
+    color: var(--text-secondary);
+    font-family: var(--font-text);
+    font-size: var(--step--1);
+    font-weight: var(--weight-label);
+    letter-spacing: var(--track-label);
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .finder__back:hover,
+  .finder__restart:hover,
+  .finder__back:focus-visible,
+  .finder__restart:focus-visible {
+    color: var(--text-primary);
+  }
+
+  .finder__back[hidden],
+  .finder__restart[hidden] {
+    visibility: hidden;
+  }
+
+  .finder__dots {
+    display: flex;
+    gap: var(--space-2xs);
+    list-style: none;
+    padding: 0;
+    margin: 0 auto;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--line);
+    transition: background var(--t-micro) var(--ease-out), transform var(--t-micro) var(--ease-out);
+  }
+
+  .dot.is-done {
+    background: var(--text-accent);
+  }
+
+  .dot.is-active {
+    background: var(--text-primary);
+    transform: scale(1.3);
+  }
+
+  .finder__panels {
+    position: relative;
+  }
+
+  .step__q {
+    font-size: var(--step-2);
+    line-height: var(--leading-card);
+    margin: 0 0 var(--space-l);
+    max-width: 20ch;
+  }
+
+  .step__q:focus-visible {
+    outline: none; /* programmatic focus target, not a pointer-visible control */
+  }
+
+  .options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-s);
+  }
+
+  .option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     gap: var(--space-xs);
-    min-height: 48px;
-    padding: 0.5em 1.25em;
+    min-height: 108px;
+    padding: var(--space-m) var(--space-s);
     border: var(--rule);
-    border-radius: var(--radius-pill);
+    border-radius: var(--radius-field);
     background: var(--surface-page);
     color: var(--text-primary);
     font-family: var(--font-text);
     font-size: var(--step-0);
-    transition: transform var(--t-micro) var(--ease-out), background var(--t-micro) var(--ease-out), border-color var(--t-micro) var(--ease-out);
+    text-align: center;
+    text-wrap: balance;
     cursor: pointer;
+    transition:
+      background var(--t-micro) var(--ease-out),
+      color var(--t-micro) var(--ease-out),
+      border-color var(--t-micro) var(--ease-out);
   }
 
-  .intent-emoji {
-    font-size: 1.2em;
+  .option__icon {
+    font-size: 1.75rem;
+    line-height: 1;
   }
 
-  .intent-btn[aria-pressed='true'] {
+  .option[aria-pressed='true'] {
     background: var(--text-primary);
-    color: var(--surface-page);
     border-color: var(--text-primary);
-    transform: scale(0.96);
-    box-shadow: inset 0 3px 6px rgba(0,0,0,0.2);
+    color: var(--surface-page);
+  }
+
+  .option:focus-visible {
+    outline: 2px solid var(--text-accent);
+    outline-offset: 2px;
   }
 
   @media (hover: hover) {
-    .intent-btn:hover:not([aria-pressed='true']) {
-      background: var(--paper);
-      transform: translateY(-2px);
+    .option:hover:not([aria-pressed='true']) {
+      border-color: var(--text-primary);
     }
   }
 
-  /* --- Result Column --- */
-  .descubre__result {
-    position: relative;
-    border-radius: var(--radius-card);
-    min-height: 540px;
+  /* --- Elegir barrio: inline sub-picker --- */
+  .barrios-sub {
+    margin-top: var(--space-l);
+    padding-top: var(--space-l);
+    border-top: var(--rule);
   }
 
-  .concierge-empty {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: var(--rule-width) dashed var(--line);
-    border-radius: var(--radius-card);
-    text-align: center;
+  .barrios-sub[hidden] {
+    display: none;
+  }
+
+  .barrios-sub__head {
     color: var(--text-tertiary);
+    margin-bottom: var(--space-s);
   }
 
-  /* The generated card styles */
-  :global(.concierge-card) {
-    display: flex;
-    flex-direction: column;
+  .options--compact {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2xs);
+  }
+
+  .option--compact {
+    flex-direction: row;
+    min-height: 44px;
+    padding: 0.6em 0.5em;
+    font-size: var(--step--1);
+  }
+
+  /* --- Result --- */
+  .result {
+    text-align: center;
+  }
+
+  .result[hidden] {
+    display: none;
+  }
+
+  .result__kicker {
+    color: var(--text-accent);
+    margin-bottom: var(--space-m);
+  }
+
+  .result__kicker:focus-visible {
+    outline: none;
+  }
+
+  :global(.result__card) {
+    display: grid;
+    text-align: left;
     border: var(--rule);
     border-radius: var(--radius-card);
     background: var(--surface-page);
@@ -372,140 +900,134 @@ const clientVenues = venues.map(v => ({
     box-shadow: var(--shadow-print);
   }
 
-  :global(.concierge__hero) {
+  :global(.result__image) {
     display: block;
-    text-decoration: none;
-    --campo-ratio: 2.2; /* Cinematic ratio for the top field */
-    border-bottom: var(--rule);
-    position: relative;
-    overflow: hidden;
-    will-change: transform;
-    transform: translateZ(0);
+    --campo-ratio: 4 / 3;
   }
 
-  /* Support for an image if injected */
-  :global(.concierge__hero img), :global(.concierge__hero picture) {
+  :global(.result__image img),
+  :global(.result__image picture) {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    opacity: 0.9;
-    mix-blend-mode: multiply;
   }
 
-  :global(.concierge__body) {
-    padding: var(--space-xl);
+  :global(.result__body) {
+    padding: var(--space-l) var(--space-l) var(--space-xl);
     display: grid;
-    gap: var(--space-l);
+    gap: var(--space-xs);
   }
 
-  :global(.concierge__title) {
+  :global(.result__name) {
     font-size: var(--step-3);
     line-height: var(--leading-card);
-    letter-spacing: var(--track-tight);
-    text-wrap: balance;
   }
 
-  :global(.concierge__title strong) {
+  :global(.result__name:focus-visible) {
+    outline: none;
+  }
+
+  :global(.result__hood) {
+    color: var(--text-tertiary);
+  }
+
+  :global(.result__tag) {
     color: var(--text-accent);
-    font-weight: inherit;
-  }
-
-  :global(.concierge__why) {
     font-size: var(--step-1);
+  }
+
+  :global(.result__why) {
+    margin-top: var(--space-xs);
     color: var(--text-secondary);
-    max-width: 48ch;
-    text-wrap: pretty;
+    max-width: 44ch;
   }
 
-  :global(.concierge__meta) {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-m) var(--space-l);
-    padding-block: var(--space-m);
-    border-block: var(--rule);
-  }
-
-  :global(.meta-item) {
+  :global(.result__actions) {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    flex-wrap: wrap;
+    gap: var(--space-s);
+    margin-top: var(--space-m);
   }
 
-  :global(.meta-item .label) {
+  .result__foot {
+    margin-top: var(--space-l);
+  }
+
+  .link-reset {
+    border: 0;
+    background: none;
     color: var(--text-tertiary);
     font-family: var(--font-text);
     font-size: var(--step--1);
-    text-transform: uppercase;
-    letter-spacing: var(--track-label);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    min-height: 44px;
+    padding: 0 var(--space-xs);
   }
 
-  :global(.meta-item .value) {
+  .link-reset:hover,
+  .link-reset:focus-visible {
     color: var(--text-primary);
-    text-transform: capitalize;
   }
 
-  :global(.concierge__actions) {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: var(--space-m);
-    margin-top: var(--space-s);
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
-  :global(.concierge__status) {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--olive);
-    font-family: var(--font-text);
-    font-size: var(--step--1);
-    font-weight: var(--weight-label);
-    text-transform: uppercase;
-    letter-spacing: var(--track-label);
-  }
+  @media (min-width: 700px) {
+    .options {
+      grid-template-columns: repeat(3, 1fr);
+    }
 
-  :global(.concierge__status::before) {
-    content: '';
-    display: block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: currentColor;
-    /* optional: a little breathing pulse */
-    animation: pulse-dot 3s ease-in-out infinite;
-  }
-
-  @keyframes pulse-dot {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
-
-  :global(.btn--editorial) {
-    min-height: 48px;
-    padding: 0.6em 1.5em;
+    .options--compact {
+      grid-template-columns: repeat(4, 1fr);
+    }
   }
 
   @media (min-width: 900px) {
-    .descubre__grid-layout {
-      grid-template-columns: 1fr 1.2fr;
+    .finder__stage {
+      padding: var(--space-xl) var(--space-2xl) var(--space-2xl);
     }
-    
-    .intents {
-      flex-wrap: wrap;
-      overflow-x: visible;
-      padding-bottom: 0;
+
+    .options {
+      grid-template-columns: repeat(5, 1fr);
     }
-    
-    .descubre__prompt {
-      position: sticky;
-      top: var(--space-2xl);
+
+    .step__q {
+      font-size: var(--step-3);
     }
-    
-    :global(.concierge__hero) {
-       --campo-ratio: 2.5;
+
+    :global(.result__card) {
+      grid-template-columns: 1fr 1fr;
+      align-items: stretch;
+    }
+
+    :global(.result__image) {
+      --campo-ratio: auto;
+      height: 100%;
+    }
+
+    :global(.result__body) {
+      align-content: center;
+      padding: var(--space-2xl);
+    }
+
+    :global(.result__name) {
+      font-size: var(--step-4);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dot.is-active {
+      transform: none;
     }
   }
 </style>

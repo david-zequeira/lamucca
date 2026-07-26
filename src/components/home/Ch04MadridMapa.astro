@@ -623,9 +623,15 @@ const first = clientVenues[0];
 
   /* The global .campo > img rule only matches a *direct* <img> child — this
      markup wraps it in <picture> for AVIF/WebP, so without this the image
-     never gets sized (it rendered at its own intrinsic size, effectively
-     invisible behind the halftone field) and never got the two-ink
-     treatment every other casa photo on the site carries. */
+     never gets sized at all: it rendered at its own intrinsic size,
+     effectively invisible behind the halftone field.
+
+     Sized, but deliberately left in natural colour rather than given the
+     sitewide two-ink treatment: on a bright, mostly-light photo like this
+     one, grayscale + multiply-blend pushes most of the frame toward flat
+     accent colour, leaving only the shadows readable — exactly the "I can't
+     see anything" complaint this fix exists to solve. Full colour here also
+     matches the desktop story panel, which was never duotone either. */
   :global(.mapa-card__image picture),
   :global(.mapa-card__image img) {
     position: absolute;
@@ -636,8 +642,6 @@ const first = clientVenues[0];
 
   :global(.mapa-card__image img) {
     object-fit: cover;
-    filter: var(--img-duotone-filter);
-    mix-blend-mode: var(--img-blend);
   }
 
   .mapa-card__body {
